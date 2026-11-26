@@ -115,6 +115,10 @@ function extractTeams(data){
 
 // ------------------- ROUTES -------------------
 
+app.get('/', (req, res) => {
+  res.redirect('/control');
+});
+
 app.get('/control', (req,res)=>{
   res.sendFile(path.join(__dirname,'public','control.html'));
 });
