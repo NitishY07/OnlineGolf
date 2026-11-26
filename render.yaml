@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: golf-team-gfx
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LEAGUE_ID
+        value: Te2100926
+      - key: ROUND_TYPE
+        value: "2"

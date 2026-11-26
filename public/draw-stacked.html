@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Draw & Tee Times Bug - Vertical Stacked GFX</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: transparent;
+      color: #ffffff;
+    }
+
+    /* VERTICAL STACKED BROADCAST BUG */
+    .draw-bug-stacked {
+      position: absolute;
+      bottom: 50px;
+      left: 70px;
+      width: 640px;
+      background: linear-gradient(165deg, rgba(8, 20, 36, 0.98) 0%, rgba(13, 28, 48, 0.98) 100%);
+      border: 1.5px solid rgba(255, 215, 0, 0.45);
+      border-top: 4.5px solid #ffd700;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.88);
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* TOP HEADER */
+    .bug-header {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.25);
+    }
+    .bug-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bug-badge {
+      background: #ffd700;
+      color: #0b1a2d;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .bug-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+    .bug-time-pill {
+      background: rgba(255, 215, 0, 0.14);
+      border: 1.5px solid rgba(255, 215, 0, 0.55);
+      color: #ffd700;
+      padding: 5px 16px;
+      border-radius: 18px;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+    }
+
+    /* SUB-HEADER */
+    .session-info {
+      padding: 8px 22px;
+      background: rgba(0, 0, 0, 0.38);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: #9db5d4;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* MATCH ARENA (VERTICALLY STACKED TEAMS) */
+    .stacked-match-arena {
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* TEAM BLOCK */
+    .team-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .team-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .team-head-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .team-logo {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      padding: 4px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+      flex-shrink: 0;
+    }
+
+    .team-name {
+      font-size: 25px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.6px;
+    }
+
+    .team-score-live {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.24);
+      border: 2px solid rgba(255, 215, 0, 0.85);
+      padding: 6px 18px;
+      border-radius: 8px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+      display: inline-block;
+      line-height: 1.2;
+      flex-shrink: 0;
+      text-align: center;
+      min-width: 82px;
+    }
+
+    /* PLAYERS LIST (STACKED VERTICALLY) */
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .player-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-left: 4.5px solid #ffd700;
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background 0.2s;
+    }
+    .player-name-text {
+      font-size: 21px;
+      font-weight: 900;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hc-badge {
+      background: rgba(255, 215, 0, 0.25);
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.55);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+
+    /* VS DIVIDER ROW */
+    .vs-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 2px 0;
+    }
+    .vs-line {
+      flex: 1;
+      height: 1.5px;
+      background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.35), transparent);
+    }
+    .vs-badge {
+      background: #ffd700;
+      color: #0b1a2d;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 1px;
+      padding: 3px 12px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+      flex-shrink: 0;
+    }
+
+    /* PROGRESS BAR */
+    .bug-progress {
+      height: 3.5px;
+      background: rgba(255, 255, 255, 0.08);
+      width: 100%;
+    }
+    .bug-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ffd700, #ff9e00);
+      transition: width 0.1s linear;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="draw-bug-stacked" id="drawBug">
+    <div class="bug-header">
+      <div class="bug-title-group">
+        <div class="bug-badge">Draw</div>
+        <div class="bug-title" id="bugTitle">MATCH 1 • QUALIFYING - R1</div>
+      </div>
+      <div class="bug-time-pill" id="bugTime">TEE OFF: 06:30 AM</div>
+    </div>
+
+    <div class="session-info">
+      <span id="bugSession">HOLE 1 • QUALIFYING - R1</span>
+      <span id="bonusTag" style="display:none; background:rgba(0,180,255,0.15); border:1px solid rgba(0,180,255,0.5); color:#00bfff; padding:3px 12px; border-radius:4px; font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase;"></span>
+    </div>
+
+    <!-- VERTICAL STACKED ARENA -->
+    <div class="stacked-match-arena">
+      <!-- TEAM 1 (TOP) -->
+      <div class="team-block">
+        <div class="team-head-row">
+          <div class="team-head-left">
+            <img class="team-logo" id="team1Logo" src="" onerror="this.style.display='none'">
+            <span class="team-name" id="team1Name">TEAM SPAN</span>
+          </div>
+          <div id="team1ScoreBadge"></div>
+        </div>
+        <div class="players-list" id="team1PlayersList"></div>
+      </div>
+
+      <!-- VS DIVIDER -->
+      <div class="vs-row">
+        <div class="vs-line"></div>
+        <div class="vs-badge">VS</div>
+        <div class="vs-line"></div>
+      </div>
+
+      <!-- TEAM 2 (BELOW TEAM 1) -->
+      <div class="team-block">
+        <div class="team-head-row">
+          <div class="team-head-left">
+            <img class="team-logo" id="team2Logo" src="" onerror="this.style.display='none'">
+            <span class="team-name" id="team2Name">ABHARAN ALBATROSS</span>
+          </div>
+          <div id="team2ScoreBadge"></div>
+        </div>
+        <div class="players-list" id="team2PlayersList"></div>
+      </div>
+    </div>
+
+    <div class="bug-progress">
+      <div class="bug-progress-fill" id="bugProgressFill"></div>
+    </div>
+  </div>
+
+  <script>
+    let drawMatches = [];
+    let matchIdx = 0;
+    let heldMatchId = null;
+    const CYCLE_MS = 10000;
+    let startCycle = Date.now();
+
+    function getScoreBadge(t, match) {
+      if (!t) return '';
+      // Hide badge when match has no score / is cleared
+      if (match && match.noScoresYet) return '';
+      if (t.matchStatus && String(t.matchStatus).trim() !== '' && String(t.matchStatus).trim() !== '.') {
+        const st = String(t.matchStatus).trim().toUpperCase();
+        return `<span class="team-score-live">${st}</span>`;
+      }
+      return '';
+    }
+
+    function renderMatch() {
+      if (!drawMatches || drawMatches.length === 0) return;
+
+      let m;
+      if (heldMatchId) {
+        m = drawMatches.find(item => item.matchId === heldMatchId) || drawMatches[0];
+      } else {
+        m = drawMatches[matchIdx % drawMatches.length];
+      }
+
+      // Update Header
+      document.getElementById('bugTitle').textContent = `MATCH ${m.matchNum} • ${(m.roundval || 'QUALIFYING - R1').toUpperCase()}`;
+      document.getElementById('bugTime').textContent = `TEE OFF: ${m.time}`;
+      document.getElementById('bugSession').textContent = `${m.hole.toUpperCase()} • ${(m.roundval || 'QUALIFYING - R1').toUpperCase()}`;
+
+      // Show (SESQUICENTENNIAL) bonus tag ONLY for tagged matches (M1, M3, M4, M6, M7)
+      const bonusTagEl = document.getElementById('bonusTag');
+      if (bonusTagEl) {
+        if (m.bonusTag && m.bonusTag.trim() !== '') {
+          bonusTagEl.textContent = m.bonusTag;
+          bonusTagEl.style.display = 'inline-block';
+        } else {
+          bonusTagEl.style.display = 'none';
+        }
+      }
+
+      // Team 1
+      const t1 = m.team1;
+      const t1Logo = document.getElementById('team1Logo');
+      if (t1.teamlogo) {
+        t1Logo.src = t1.teamlogo;
+        t1Logo.style.display = 'block';
+      } else {
+        t1Logo.style.display = 'none';
+      }
+      document.getElementById('team1Name').textContent = t1.name;
+      document.getElementById('team1ScoreBadge').innerHTML = getScoreBadge(t1, m);
+
+      const t1Players = (t1.players && Array.isArray(t1.players)) ? t1.players.slice(0, 2) : [];
+      document.getElementById('team1PlayersList').innerHTML = t1Players.map(p => `
+        <div class="player-chip">
+          <span class="player-name-text">${p.name}</span>
+          ${p.hc ? `<span class="hc-badge">HC:${p.hc}</span>` : ''}
+        </div>
+      `).join('');
+
+      // Team 2 (Stacked Below Team 1)
+      const t2 = m.team2;
+      const t2Logo = document.getElementById('team2Logo');
+      if (t2.teamlogo) {
+        t2Logo.src = t2.teamlogo;
+        t2Logo.style.display = 'block';
+      } else {
+        t2Logo.style.display = 'none';
+      }
+      document.getElementById('team2Name').textContent = t2.name;
+      document.getElementById('team2ScoreBadge').innerHTML = getScoreBadge(t2, m);
+
+      const t2Players = (t2.players && Array.isArray(t2.players)) ? t2.players.slice(0, 2) : [];
+      document.getElementById('team2PlayersList').innerHTML = t2Players.map(p => `
+        <div class="player-chip">
+          <span class="player-name-text">${p.name}</span>
+          ${p.hc ? `<span class="hc-badge">HC:${p.hc}</span>` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function loadData() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        const sessionParam = urlParams.get('session');
+        const matchParam = urlParams.get('matchId');
+
+        let url = '/api/draw?';
+        if (dateParam) url += `date=${encodeURIComponent(dateParam)}&`;
+        if (sessionParam) url += `session=${encodeURIComponent(sessionParam)}&`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.status === 1) {
+          if (json.matches && Array.isArray(json.matches)) {
+            drawMatches = json.matches;
+          }
+          heldMatchId = matchParam || json.heldMatchId || null;
+          renderMatch();
+        }
+      } catch (e) {
+        console.error('Error fetching draw for bug:', e);
+      }
+    }
+
+    function loop() {
+      if (heldMatchId) {
+        document.getElementById('bugProgressFill').style.width = '100%';
+      } else {
+        const elapsed = Date.now() - startCycle;
+        const pct = Math.min(100, (elapsed / CYCLE_MS) * 100);
+        document.getElementById('bugProgressFill').style.width = pct + '%';
+
+        if (elapsed >= CYCLE_MS) {
+          startCycle = Date.now();
+          if (drawMatches.length > 0) {
+            matchIdx = (matchIdx + 1) % drawMatches.length;
+            renderMatch();
+          }
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+
+    loadData();
+    setInterval(loadData, 5000);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

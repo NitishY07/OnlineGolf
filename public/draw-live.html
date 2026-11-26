@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Draw & Tee Times Bug - Compact Broadcast GFX</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: transparent;
+      color: #ffffff;
+    }
+
+    /* COMPACT BROADCAST BUG */
+    .draw-bug {
+      position: absolute;
+      bottom: 45px;
+      left: 70px;
+      width: 1040px;
+      background: linear-gradient(165deg, rgba(8, 20, 36, 0.98) 0%, rgba(13, 28, 48, 0.98) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.45);
+      border-top: 4px solid #ffd700;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.85);
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* COMPACT TOP HEADER */
+    .bug-header {
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.22);
+    }
+    .bug-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bug-badge {
+      background: #ffd700;
+      color: #0b1a2d;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      padding: 4px 11px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .bug-title {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+    .bug-time-pill {
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      color: #ffd700;
+      padding: 5px 16px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+    }
+
+    /* COMPACT SUB-HEADER */
+    .session-info {
+      padding: 7px 22px;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #8da4c4;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* SIDE-BY-SIDE MATCH ARENA */
+    .bug-match-arena {
+      display: flex;
+      align-items: center;
+      padding: 14px 22px 16px 22px;
+      position: relative;
+    }
+
+    .team-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .team-column.team-left {
+      padding-right: 16px;
+    }
+    .team-column.team-right {
+      padding-left: 16px;
+    }
+
+    /* TEAM 1 (LEFT): LOGO ON LEFT, NAME CLOSE ON RIGHT */
+    .team-head-left {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+      min-height: 56px;
+    }
+
+    /* TEAM 2 (RIGHT): NAME CLOSE ON LEFT, LOGO ON RIGHT */
+    .team-head-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      min-height: 56px;
+    }
+
+    .team-logo {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 3px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+
+    .team-info-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 5px;
+    }
+
+    .team-info-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 5px;
+    }
+
+    .team-name {
+      font-size: 22px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.6px;
+    }
+
+    /* SCORE CONTAINER (BELOW TEAM NAME, ABOVE PLAYERS) */
+    .score-container {
+      display: flex;
+      align-items: center;
+    }
+    .team-score-live {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.22);
+      border: 2px solid rgba(255, 215, 0, 0.75);
+      padding: 3px 12px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+      display: inline-block;
+      line-height: 1.3;
+    }
+
+    /* 2 PLAYERS STACKED VERTICALLY (2nd PLAYER BELOW 1st PLAYER) */
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      width: 100%;
+    }
+    .player-chip {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-left: 4px solid #ffd700;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 17px;
+      font-weight: 800;
+      color: #f8fafc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .player-name-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .hc-badge {
+      background: rgba(255, 215, 0, 0.25);
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    /* CENTER VS DIVIDER */
+    .vs-divider {
+      width: 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch;
+    }
+    .vs-line {
+      flex: 1;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .vs-circle {
+      background: #ffd700;
+      color: #0b1a2d;
+      font-weight: 900;
+      font-size: 14px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.45);
+      margin: 8px 0;
+      flex-shrink: 0;
+    }
+
+    /* PROGRESS BAR */
+    .bug-progress {
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      width: 100%;
+    }
+    .bug-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ffd700, #ff9e00);
+      transition: width 0.1s linear;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="draw-bug" id="drawBug">
+    <div class="bug-header">
+      <div class="bug-title-group">
+        <div class="bug-badge">Draw</div>
+        <div class="bug-title" id="bugTitle">MATCH 1 • QUALIFYING - R1</div>
+      </div>
+      <div class="bug-time-pill" id="bugTime">TEE OFF: 06:30 AM</div>
+    </div>
+
+    <div class="session-info">
+      <span id="bugSession">HOLE 1 • QUALIFYING - R1</span>
+      <span id="bonusTag" style="display:none; background:rgba(0,180,255,0.15); border:1px solid rgba(0,180,255,0.5); color:#00bfff; padding:3px 12px; border-radius:4px; font-size:12px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase;"></span>
+    </div>
+
+    <!-- SIDE-BY-SIDE ARENA -->
+    <div class="bug-match-arena">
+      <!-- LEFT TEAM (Logo on Left, Name next to it) -->
+      <div class="team-column team-left">
+        <div class="team-head-left">
+          <img class="team-logo" id="team1Logo" src="" onerror="this.style.display='none'">
+          <div class="team-info-left">
+            <span class="team-name" id="team1Name">LA MARVELLA</span>
+            <div class="score-container" id="team1ScoreRow"></div>
+          </div>
+        </div>
+        <div class="players-list" id="team1PlayersList"></div>
+      </div>
+
+      <!-- CENTER VS -->
+      <div class="vs-divider">
+        <div class="vs-line"></div>
+        <div class="vs-circle">VS</div>
+        <div class="vs-line"></div>
+      </div>
+
+      <!-- RIGHT TEAM (Name on Left, Logo on Right, tight together) -->
+      <div class="team-column team-right">
+        <div class="team-head-right">
+          <div class="team-info-right">
+            <span class="team-name" id="team2Name">RAYA VIPERS</span>
+            <div class="score-container" id="team2ScoreRow"></div>
+          </div>
+          <img class="team-logo" id="team2Logo" src="" onerror="this.style.display='none'">
+        </div>
+        <div class="players-list" id="team2PlayersList"></div>
+      </div>
+    </div>
+
+    <div class="bug-progress">
+      <div class="bug-progress-fill" id="bugProgressFill"></div>
+    </div>
+  </div>
+
+  <script>
+    let drawMatches = [];
+    let matchIdx = 0;
+    let heldMatchId = null;
+    const CYCLE_MS = 10000;
+    let startCycle = Date.now();
+
+    function getScoreBadge(t, match) {
+      if (!t) return '';
+
+      // Hide badge when match has no score / is cleared
+      if (match && match.noScoresYet) return '';
+
+      // Match play status (AS, 1UP, 1DN, 2UP, 2DN, 3UP, 3DN etc.)
+      if (t.matchStatus && String(t.matchStatus).trim() !== '' && String(t.matchStatus).trim() !== '.') {
+        const st = String(t.matchStatus).trim().toUpperCase();
+        return `<span class="team-score-live">${st}</span>`;
+      }
+
+      // Do NOT show points (e.g. 7 PTS) on the draw GFX - return empty
+      return '';
+    }
+
+    function renderMatch() {
+      if (!drawMatches || drawMatches.length === 0) return;
+
+      let m;
+      if (heldMatchId) {
+        m = drawMatches.find(item => item.matchId === heldMatchId) || drawMatches[0];
+      } else {
+        m = drawMatches[matchIdx % drawMatches.length];
+      }
+
+      // Update Header
+      document.getElementById('bugTitle').textContent = `MATCH ${m.matchNum} • ${(m.roundval || 'QUALIFYING - R1').toUpperCase()}`;
+      document.getElementById('bugTime').textContent = `TEE OFF: ${m.time}`;
+      document.getElementById('bugSession').textContent = `${m.hole.toUpperCase()} • ${(m.roundval || 'QUALIFYING - R1').toUpperCase()}`;
+
+      // Show (SESQUICENTENNIAL) bonus tag ONLY for tagged matches (M1, M3, M4, M6, M7)
+      const bonusTagEl = document.getElementById('bonusTag');
+      if (bonusTagEl) {
+        if (m.bonusTag && m.bonusTag.trim() !== '') {
+          bonusTagEl.textContent = m.bonusTag;
+          bonusTagEl.style.display = 'inline-block';
+        } else {
+          bonusTagEl.style.display = 'none';
+        }
+      }
+
+      // Team 1 (Left Side: Logo on Left, Name Close)
+      const t1 = m.team1;
+      const t1Logo = document.getElementById('team1Logo');
+      if (t1.teamlogo) {
+        t1Logo.src = t1.teamlogo;
+        t1Logo.style.display = 'block';
+      } else {
+        t1Logo.style.display = 'none';
+      }
+      document.getElementById('team1Name').textContent = t1.name;
+      document.getElementById('team1ScoreRow').innerHTML = getScoreBadge(t1, m);
+
+      const t1Players = (t1.players && Array.isArray(t1.players)) ? t1.players.slice(0, 2) : [];
+      document.getElementById('team1PlayersList').innerHTML = t1Players.map(p => `
+        <div class="player-chip">
+          <span class="player-name-text">${p.name}</span>
+          ${p.hc ? `<span class="hc-badge">HC:${p.hc}</span>` : ''}
+        </div>
+      `).join('');
+
+      // Team 2 (Right Side: Name Close, Logo on Right)
+      const t2 = m.team2;
+      const t2Logo = document.getElementById('team2Logo');
+      if (t2.teamlogo) {
+        t2Logo.src = t2.teamlogo;
+        t2Logo.style.display = 'block';
+      } else {
+        t2Logo.style.display = 'none';
+      }
+      document.getElementById('team2Name').textContent = t2.name;
+      document.getElementById('team2ScoreRow').innerHTML = getScoreBadge(t2, m);
+
+      const t2Players = (t2.players && Array.isArray(t2.players)) ? t2.players.slice(0, 2) : [];
+      document.getElementById('team2PlayersList').innerHTML = t2Players.map(p => `
+        <div class="player-chip">
+          <span class="player-name-text">${p.name}</span>
+          ${p.hc ? `<span class="hc-badge">HC:${p.hc}</span>` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function loadData() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        const sessionParam = urlParams.get('session');
+        const matchParam = urlParams.get('matchId');
+
+        let url = '/api/draw?';
+        if (dateParam) url += `date=${encodeURIComponent(dateParam)}&`;
+        if (sessionParam) url += `session=${encodeURIComponent(sessionParam)}&`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.status === 1) {
+          if (json.matches && Array.isArray(json.matches)) {
+            drawMatches = json.matches;
+          }
+          heldMatchId = matchParam || json.heldMatchId || null;
+          renderMatch();
+        }
+      } catch (e) {
+        console.error('Error fetching draw for bug:', e);
+      }
+    }
+
+    function loop() {
+      if (heldMatchId) {
+        document.getElementById('bugProgressFill').style.width = '100%';
+      } else {
+        const elapsed = Date.now() - startCycle;
+        const pct = Math.min(100, (elapsed / CYCLE_MS) * 100);
+        document.getElementById('bugProgressFill').style.width = pct + '%';
+
+        if (elapsed >= CYCLE_MS) {
+          startCycle = Date.now();
+          if (drawMatches.length > 0) {
+            matchIdx = (matchIdx + 1) % drawMatches.length;
+            renderMatch();
+          }
+        }
+      }
+      requestAnimationFrame(loop);
+    }
+
+    loadData();
+    setInterval(loadData, 5000);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

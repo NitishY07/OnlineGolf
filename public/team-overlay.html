@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: transparent;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  /* ── WRAPPER ── */
+  .matchup-wrap {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    width: 1160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    opacity: 0;
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+  .matchup-wrap.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── HOLE BADGE ── */
+  .hole-badge {
+    background: linear-gradient(135deg, #f4c430, #c8960c);
+    color: #0b1a2d;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 7px 36px;
+    border-radius: 8px 8px 0 0;
+    clip-path: polygon(10px 0%, calc(100% - 10px) 0%, 100% 100%, 0% 100%);
+    text-align: center;
+    min-width: 240px;
+    box-shadow: 0 -4px 20px rgba(244,196,48,0.4);
+  }
+
+  /* ── MAIN CARD ── */
+  .matchup-card {
+    width: 100%;
+    background: linear-gradient(160deg, #0b1c2d 0%, #1a3a5c 50%, #0b1c2d 100%);
+    border: 1px solid rgba(244,196,48,0.3);
+    border-top: 3px solid #f4c430;
+    border-radius: 0 12px 12px 12px;
+    padding: 20px 30px 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.75);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* subtle diagonal stripe */
+  .matchup-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -55deg,
+      transparent,
+      transparent 30px,
+      rgba(255,255,255,0.013) 30px,
+      rgba(255,255,255,0.013) 60px
+    );
+    pointer-events: none;
+  }
+
+  /* ── TOP ROW: TEAMS ── */
+  .teams-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+
+  /* ── TEAM SIDE ── */
+  .team-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .team-side.right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  .team-logo {
+    width: 68px;
+    height: 68px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    padding: 4px;
+  }
+
+  .team-info {}
+
+  .team-name {
+    font-size: 21px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    line-height: 1.1;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  .team-rank {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f4c430;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    opacity: 0.9;
+  }
+
+  /* ── VS / MATCH STATUS DIVIDER ── */
+  .vs-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 24px;
+    flex-shrink: 0;
+  }
+  .vs-line {
+    width: 2px;
+    height: 22px;
+    background: linear-gradient(to bottom, transparent, rgba(244,196,48,0.5));
+  }
+  .vs-line.bottom {
+    background: linear-gradient(to bottom, rgba(244,196,48,0.5), transparent);
+  }
+  .vs-text {
+    font-size: 18px;
+    font-weight: 900;
+    color: #f4c430;
+    letter-spacing: 2px;
+    opacity: 0.75;
+  }
+
+  /* ── MATCH STATUS BADGE ── */
+  .match-status-badge {
+    background: rgba(244,196,48,0.12);
+    border: 1.5px solid rgba(244,196,48,0.5);
+    border-radius: 20px;
+    padding: 4px 18px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #f4c430;
+    text-align: center;
+    white-space: nowrap;
+    display: none; /* shown by JS when status is set */
+  }
+  .match-status-badge.visible {
+    display: block;
+  }
+
+  /* ── DIVIDER LINE ── */
+  .players-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244,196,48,0.25) 20%, rgba(244,196,48,0.25) 80%, transparent);
+    margin: 14px 0 12px;
+    display: none;
+  }
+  .players-divider.visible { display: block; }
+
+  /* ── PLAYERS ROW ── */
+  .players-row {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0;
+    display: none;
+  }
+  .players-row.visible { display: flex; }
+
+  .players-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .players-col.right {
+    align-items: flex-end;
+  }
+
+  .players-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(244,196,48,0.5);
+    margin-bottom: 3px;
+  }
+
+  .player-name-item {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeSlideIn 0.4s ease both;
+  }
+  .player-name-item::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #f4c430;
+    flex-shrink: 0;
+  }
+  .players-col.right .player-name-item {
+    flex-direction: row-reverse;
+  }
+  .players-col.right .player-name-item::before {
+    /* dot on right side for right column */
+  }
+
+  /* ── VS CENTER ── */
+  .players-vs-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+
+  /* ── BRAND STRIP ── */
+  .brand-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #f4c430 20%, #f4c430 80%, transparent);
+  }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="matchup-wrap" id="wrap">
+
+  <div class="hole-badge" id="holeBadge">HOLE MATCHUP</div>
+
+  <div class="matchup-card">
+
+    <!-- TOP ROW: TEAMS -->
+    <div class="teams-row">
+
+      <!-- TEAM 1 (LEFT) -->
+      <div class="team-side left" id="team1Block">
+        <img class="team-logo" id="t1Logo" src="" alt="">
+        <div class="team-info">
+          <div class="team-name" id="t1Name">—</div>
+          <div class="team-rank" id="t1Rank">RANK —</div>
+        </div>
+      </div>
+
+      <!-- VS / MATCH STATUS -->
+      <div class="vs-divider">
+        <div class="vs-line"></div>
+        <div class="vs-text" id="vsText">VS</div>
+        <div class="vs-line bottom"></div>
+        <div class="match-status-badge" id="matchStatusBadge"></div>
+      </div>
+
+      <!-- TEAM 2 (RIGHT) -->
+      <div class="team-side right" id="team2Block">
+        <img class="team-logo" id="t2Logo" src="" alt="">
+        <div class="team-info">
+          <div class="team-name" id="t2Name">—</div>
+          <div class="team-rank" id="t2Rank">RANK —</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DIVIDER (only when players present) -->
+    <div class="players-divider" id="playersDivider"></div>
+
+    <!-- PLAYERS ROW -->
+    <div class="players-row" id="playersRow">
+
+      <div class="players-col left" id="p1Col">
+        <div class="players-label">Playing</div>
+      </div>
+
+      <div class="players-vs-center">
+        <span style="font-size:11px;font-weight:700;color:rgba(244,196,48,0.4);letter-spacing:2px;">VS</span>
+      </div>
+
+      <div class="players-col right" id="p2Col">
+        <div class="players-label">Playing</div>
+      </div>
+
+    </div>
+
+    <div class="brand-strip"></div>
+  </div>
+
+</div>
+
+<script>
+  let wasVisible = false;
+  let allPlayers1 = [], allPlayers2 = [];
+  let playerPage = 0;
+  const PAGE_SIZE = 4;    // show 4 players at a time
+  const PAGE_MS  = 4000;  // rotate every 4 seconds
+  let pageTimer = null;
+
+  function renderPlayerPage() {
+    const start = playerPage * PAGE_SIZE;
+    const slice1 = allPlayers1.slice(start, start + PAGE_SIZE);
+    const slice2 = allPlayers2.slice(start, start + PAGE_SIZE);
+    renderPlayers(document.getElementById('p1Col'), slice1);
+    renderPlayers(document.getElementById('p2Col'), slice2);
+  }
+
+  function startPlayerCycle() {
+    if (pageTimer) clearInterval(pageTimer);
+    const maxPages = Math.ceil(Math.max(allPlayers1.length, allPlayers2.length) / PAGE_SIZE);
+    if (maxPages <= 1) return; // no need to cycle
+    pageTimer = setInterval(() => {
+      playerPage = (playerPage + 1) % maxPages;
+      renderPlayerPage();
+    }, PAGE_MS);
+  }
+
+  function renderPlayers(colEl, players) {
+    const label = colEl.querySelector('.players-label');
+    colEl.innerHTML = '';
+    colEl.appendChild(label);
+    players.forEach((name, i) => {
+      const div = document.createElement('div');
+      div.className = 'player-name-item';
+      div.style.animationDelay = (i * 0.07) + 's';
+      div.textContent = name.trim().toUpperCase();
+      colEl.appendChild(div);
+    });
+  }
+
+  async function loadTeams() {
+    try {
+      const res = await fetch('/api/teams');
+      const json = await res.json();
+      const wrap = document.getElementById('wrap');
+
+      if (!json || json.status !== 1 || !json.team1 || !json.team2) {
+        wrap.classList.remove('visible');
+        wasVisible = false;
+        return;
+      }
+
+      const t1 = json.team1;
+      const t2 = json.team2;
+      const hole = json.hole || 'HOLE MATCHUP';
+      const matchStatus = json.matchstatus || '';
+
+      // Fill team data
+      document.getElementById('holeBadge').textContent = hole.toUpperCase();
+      document.getElementById('t1Logo').src = t1.teamlogo || '';
+      document.getElementById('t1Name').textContent = (t1.teamname || '').toUpperCase();
+      document.getElementById('t1Rank').textContent = `RANK #${t1.position || '—'}`;
+      document.getElementById('t2Logo').src = t2.teamlogo || '';
+      document.getElementById('t2Name').textContent = (t2.teamname || '').toUpperCase();
+      document.getElementById('t2Rank').textContent = `RANK #${t2.position || '—'}`;
+
+      // Match status badge
+      const badge = document.getElementById('matchStatusBadge');
+      const vsText = document.getElementById('vsText');
+      if (matchStatus) {
+        badge.textContent = matchStatus;
+        badge.classList.add('visible');
+        vsText.style.opacity = '0.35';
+      } else {
+        badge.classList.remove('visible');
+        vsText.style.opacity = '0.75';
+      }
+
+      // Players — update only if changed (avoid resetting page counter)
+      const newP1 = t1.players || [];
+      const newP2 = t2.players || [];
+      const changed = JSON.stringify(newP1) !== JSON.stringify(allPlayers1)
+                   || JSON.stringify(newP2) !== JSON.stringify(allPlayers2);
+
+      const hasPlayers = newP1.length > 0 || newP2.length > 0;
+      document.getElementById('playersDivider').classList.toggle('visible', hasPlayers);
+      document.getElementById('playersRow').classList.toggle('visible', hasPlayers);
+
+      if (hasPlayers && changed) {
+        allPlayers1 = newP1;
+        allPlayers2 = newP2;
+        playerPage = 0;
+        renderPlayerPage();
+        startPlayerCycle();
+      }
+
+      if (!wasVisible) {
+        wrap.classList.add('visible');
+        wasVisible = true;
+      }
+
+    } catch (err) {
+      console.error('Overlay error', err);
+    }
+  }
+
+  loadTeams();
+  setInterval(loadTeams, 5000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Golf League - Full Screen Team Standings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 20%, #102a45 0%, #061321 70%, #02070e 100%);
+      color: #ffffff;
+      position: relative;
+    }
+
+    /* Ambient broadcast background effects */
+    .bg-glow-1 {
+      position: absolute;
+      width: 800px;
+      height: 400px;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(0, 168, 255, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+    .bg-lines {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .container {
+      width: 1820px;
+      height: 1020px;
+      margin: 30px auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(90deg, rgba(11, 28, 48, 0.95), rgba(21, 56, 92, 0.95));
+      border: 1px solid rgba(255, 215, 0, 0.35);
+      border-radius: 12px;
+      padding: 18px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      margin-bottom: 22px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .trophy-badge {
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #0b1a2d;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 2px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    }
+    .title-group h1 {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ffffff, #d7e7f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .title-group p {
+      font-size: 14px;
+      color: #6bb4ff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .round-pill {
+      background: rgba(0, 168, 255, 0.15);
+      border: 1px solid rgba(0, 168, 255, 0.4);
+      color: #70c4ff;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(220, 38, 38, 0.5);
+      color: #ff5e5e;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      background: #ff3333;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* GRID COLUMNS */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      flex: 1;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    /* ROW CARD */
+    .team-row {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(14, 34, 58, 0.88), rgba(20, 48, 80, 0.82));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 7px 16px;
+      height: 72px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .team-row::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: transparent;
+      transition: background 0.3s;
+    }
+
+    /* Top 3 Stylings */
+    .team-row.rank-1 {
+      background: linear-gradient(90deg, rgba(45, 38, 12, 0.95), rgba(28, 54, 88, 0.9));
+      border-color: rgba(255, 215, 0, 0.5);
+      box-shadow: 0 6px 20px rgba(255, 215, 0, 0.2);
+    }
+    .team-row.rank-1::before { background: #ffd700; }
+    .team-row.rank-2 {
+      border-color: rgba(200, 214, 229, 0.4);
+    }
+    .team-row.rank-2::before { background: #c8d6e5; }
+    .team-row.rank-3 {
+      border-color: rgba(205, 127, 50, 0.4);
+    }
+    .team-row.rank-3::before { background: #cd7f32; }
+
+    /* Rank Badge */
+    .rank-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #d1e3f8;
+      margin-right: 14px;
+      flex-shrink: 0;
+    }
+    .rank-1 .rank-badge {
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #0b1a2d;
+      border: none;
+      box-shadow: 0 2px 10px rgba(255, 215, 0, 0.5);
+    }
+    .rank-2 .rank-badge {
+      background: linear-gradient(135deg, #e0e0e0, #8a8a8a);
+      color: #0b1a2d;
+      border: none;
+    }
+    .rank-3 .rank-badge {
+      background: linear-gradient(135deg, #e69a53, #9e5b22);
+      color: #ffffff;
+      border: none;
+    }
+
+    /* Logo */
+    .team-logo-box {
+      width: 54px;
+      height: 54px;
+      margin-right: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .team-logo-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Team Info */
+    .team-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .team-name {
+      font-size: 21px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+    }
+
+
+    /* Total Points */
+    .pts-box {
+      text-align: right;
+      flex-shrink: 0;
+      padding-left: 14px;
+    }
+    .pts-value {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffd700;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .pts-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #8bbceb;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow-1"></div>
+  <div class="bg-lines"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="trophy-badge">LEAGUE STANDINGS</div>
+        <div class="title-group">
+          <h1 id="league-title">TEAM OVERALL LEADERBOARD</h1>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-indicator">
+          <div class="live-dot"></div>
+          LIVE
+        </div>
+      </div>
+    </div>
+
+    <!-- 20 Teams Grid -->
+    <div class="grid">
+      <div class="col" id="col-left"></div>
+      <div class="col" id="col-right"></div>
+    </div>
+  </div>
+
+  <script>
+    const teamMap = new Map();
+
+    async function loadStandings() {
+      try {
+        const res = await fetch('/api/team-standings');
+        const data = await res.json();
+
+        if (!data || data.status !== 1 || !data.teams) return;
+
+        const teams = data.teams;
+        // Sort teams by position or Totalpoints
+        teams.sort((a, b) => {
+          const posA = parseInt(a.position, 10) || 999;
+          const posB = parseInt(b.position, 10) || 999;
+          if (posA !== posB) return posA - posB;
+          return (parseFloat(b.Totalpoints) || 0) - (parseFloat(a.Totalpoints) || 0);
+        });
+
+        renderTeams(teams);
+      } catch (err) {
+        console.error('Error fetching standings:', err);
+      }
+    }
+
+    function renderTeams(teams) {
+      const colLeft = document.getElementById('col-left');
+      const colRight = document.getElementById('col-right');
+
+      // Preserve DOM positions for smooth updates
+      colLeft.innerHTML = '';
+      colRight.innerHTML = '';
+
+      teams.forEach((team, index) => {
+        const rank = index + 1;
+        const row = createRow(team, rank);
+
+        if (index < 10) {
+          colLeft.appendChild(row);
+        } else {
+          colRight.appendChild(row);
+        }
+      });
+    }
+
+    function createRow(team, rank) {
+      const row = document.createElement('div');
+      row.className = `team-row rank-${rank}`;
+
+      const total = team.Totalpoints || 0;
+      const logo = team.teamlogo || 'https://onlinegolfapp.com/assets/images/teamlogo/default.png';
+
+      row.innerHTML = `
+        <div class="rank-badge">${rank}</div>
+        <div class="team-logo-box">
+          <img class="team-logo-img" src="${logo}" onerror="this.style.display='none'">
+        </div>
+        <div class="team-info">
+          <div class="team-name">${team.teamname || 'TEAM ' + rank}</div>
+        </div>
+        <div class="pts-box">
+          <div class="pts-value">${total}</div>
+          <div class="pts-label">PTS</div>
+        </div>
+      `;
+
+      return row;
+    }
+
+    // Initial load + poll every 6s
+    loadStandings();
+    setInterval(loadStandings, 6000);
+  </script>
+</body>
+</html>

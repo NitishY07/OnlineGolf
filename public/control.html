@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Team Overlay & Standings Control Deck</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+    body {
+      background: #0d1b2a;
+      color: #e0e1dd;
+      padding: 30px;
+    }
+    .wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge {
+      background: #ffd700;
+      color: #0b1a2d;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    p.subtitle {
+      color: #778da9;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+    .card {
+      background: #1b263b;
+      border: 1px solid #415a77;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+    .card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #e0e1dd;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a3b18a;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      background: #0d1b2a;
+      border: 1px solid #415a77;
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus {
+      border-color: #ffd700;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #0b1a2d;
+      border: none;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: transform 0.1s, box-shadow 0.2s;
+    }
+    .btn:hover {
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+      transform: translateY(-1px);
+    }
+    .status-msg {
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .status-msg.success { color: #52b788; }
+    .status-msg.error { color: #e63946; }
+
+    /* OVERLAY LINKS */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .link-box {
+      background: #0d1b2a;
+      border: 1px solid #415a77;
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .link-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .link-desc {
+      font-size: 12px;
+      color: #778da9;
+      margin-bottom: 12px;
+    }
+    .link-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .link-btn {
+      flex: 1;
+      text-align: center;
+      background: #415a77;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .link-btn:hover {
+      background: #1f4e79;
+    }
+    .link-btn.primary {
+      background: #0077b6;
+    }
+    .link-btn.primary:hover {
+      background: #0096c7;
+    }
+    .qbtn {
+      background: #243b55;
+      border: 1px solid #415a77;
+      color: #ffd700;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.15s;
+    }
+    .qbtn:hover {
+      background: #ffd700;
+      color: #0b1a2d;
+      border-color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+      <h1>
+        Golf Broadcast Team Deck
+        <span class="badge">LEAGUE OVERVIEW</span>
+      </h1>
+      <a href="http://localhost:2000/control" target="_blank" class="btn" style="padding:8px 16px; font-size:13px; text-decoration:none; background:#415a77; color:#fff;">
+        🏌️‍♂️ Open Player Control (Port 2000)
+      </a>
+    </div>
+    <p class="subtitle">Control team matchups and access full-screen & live broadcast standings overlays</p>
+
+    <!-- SELECT TWO TEAMS -->
+    <div class="card">
+      <h2>1. Dual Team Matchup Overlay Control</h2>
+      
+      <div class="form-group">
+        <label for="team1">Select Team 1</label>
+        <select id="team1">
+          <option value="">-- Loading teams from API... --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="team2">Select Team 2</label>
+        <select id="team2">
+          <option value="">-- Loading teams from API... --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="holeNum">Hole Number</label>
+        <input type="number" id="holeNum" min="1" max="18" placeholder="e.g. 7"
+          style="width:100%;padding:12px 14px;background:#0d1b2a;border:1px solid #415a77;border-radius:6px;color:#fff;font-size:15px;font-weight:600;outline:none;">
+      </div>
+
+      <!-- MATCH STATUS -->
+      <div class="form-group">
+        <label for="matchStatus">Match Status</label>
+        <select id="matchStatus">
+          <option value="ALL SQUARE">All Square</option>
+          <option value="1 UP">1 Up (Team 1 leads)</option>
+          <option value="2 UP">2 Up (Team 1 leads)</option>
+          <option value="3 UP">3 Up (Team 1 leads)</option>
+          <option value="4 UP">4 Up (Team 1 leads)</option>
+          <option value="5 UP">5 Up (Team 1 leads)</option>
+          <option value="1 DN">1 Down (Team 2 leads)</option>
+          <option value="2 DN">2 Down (Team 2 leads)</option>
+          <option value="3 DN">3 Down (Team 2 leads)</option>
+          <option value="4 DN">4 Down (Team 2 leads)</option>
+          <option value="5 DN">5 Down (Team 2 leads)</option>
+        </select>
+      </div>
+
+      <!-- PLAYERS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label style="margin:0;">Team 1 Match Players</label>
+            <span style="font-size:11px;color:#ffd700;">Click players to select (or leave blank to auto-cycle all)</span>
+          </div>
+          <input type="text" id="players1" placeholder="Leave empty for all team players, or click pills below"
+            style="width:100%;padding:10px 14px;background:#0d1b2a;border:1px solid #415a77;border-radius:6px;color:#fff;font-size:13px;font-weight:600;outline:none;">
+          <div id="pills1" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-height:120px;overflow-y:auto;"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <label style="margin:0;">Team 2 Match Players</label>
+            <span style="font-size:11px;color:#ffd700;">Click players to select (or leave blank to auto-cycle all)</span>
+          </div>
+          <input type="text" id="players2" placeholder="Leave empty for all team players, or click pills below"
+            style="width:100%;padding:10px 14px;background:#0d1b2a;border:1px solid #415a77;border-radius:6px;color:#fff;font-size:13px;font-weight:600;outline:none;">
+          <div id="pills2" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;max-height:120px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn" onclick="selectTeams()">🟢 Push To Dual Overlay</button>
+        <button class="btn" onclick="clearTeams()"
+          style="background:linear-gradient(135deg,#e63946,#9b1b22);color:#fff;">
+          🔴 Clear / Hide Overlay
+        </button>
+      </div>
+      <div id="status-msg" class="status-msg"></div>
+    </div>
+
+    <!-- DRAW DATE & LIVE MATCH CONTROL -->
+    <div class="card">
+      <h2>2. Live Draw & Tee Times Control (Morning & Afternoon)</h2>
+      <p style="font-size:13px;color:#778da9;margin-bottom:14px;">Select the broadcast day, session filter, and optionally <b>hold on a specific match</b> so the GFX stays locked on that pairing while they play:</p>
+      
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:14px;margin-bottom:14px;">
+        <div>
+          <label style="display:block;font-size:12px;color:#ffd700;font-weight:700;margin-bottom:6px;text-transform:uppercase;">Tournament Date:</label>
+          <select id="drawDateSelect" onchange="updateMatchListDropdown()">
+            <option value="2026-11-20">Friday, 20 Nov 2026 (Round 1, Day 1)</option>
+            <option value="2026-11-21">Saturday, 21 Nov 2026 (Round 1, Day 2)</option>
+            <option value="2026-11-27" selected>Friday, 27 Nov 2026 (Round 2, Day 1)</option>
+            <option value="2026-11-28">Saturday, 28 Nov 2026 (Round 2, Day 2)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;color:#ffd700;font-weight:700;margin-bottom:6px;text-transform:uppercase;">Session Filter:</label>
+          <select id="drawSessionSelect" onchange="updateMatchListDropdown()">
+            <option value="all">All Sessions (Morning & Afternoon - 30 Matches)</option>
+            <option value="morning">Morning Session (06:30 AM - 15 Matches)</option>
+            <option value="afternoon">Afternoon Session (11:00 AM - 15 Matches)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:12px;color:#ffd700;font-weight:700;margin-bottom:6px;text-transform:uppercase;">Hold on Active Match Playing:</label>
+          <select id="drawMatchHoldSelect">
+            <option value="auto">🔄 Auto-Cycle All Matches (10s each)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn" onclick="applyDrawControl()" style="padding:11px 22px;">⚡ Apply Draw Control</button>
+        <button class="btn" onclick="releaseDrawHold()" style="background:#243b55;padding:11px 20px;">🔄 Release Hold (Resume Auto-Cycle)</button>
+      </div>
+      <div id="draw-date-msg" class="status-msg" style="margin-top:12px;"></div>
+
+      <!-- MATCH PLAY STATUS MANUAL OVERRIDE -->
+      <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;">
+        <label style="display:block;font-size:12px;color:#ffd700;font-weight:700;margin-bottom:4px;text-transform:uppercase;">⚔️ Manual Match Play Status</label>
+        <p style="font-size:12px;color:#778da9;margin-bottom:12px;">Select a match above first, then enter its status (e.g. <b style="color:#ffd700">AS</b>, <b style="color:#ffd700">1UP</b>, <b style="color:#ffd700">1DN</b>, <b style="color:#ffd700">2UP</b>, <b style="color:#ffd700">2DN</b>). Push to GFX instantly.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:flex-end;">
+          <div>
+            <label style="font-size:11px;color:#a3b18a;margin-bottom:4px;">Team 1 Status (Left):</label>
+            <input type="text" id="t1StatusInput" placeholder="e.g. AS, 1UP, 2DN"
+              style="width:100%;padding:10px 12px;background:#0d1b2a;border:1px solid #415a77;border-radius:6px;color:#fff;font-size:14px;font-weight:700;outline:none;text-transform:uppercase;"
+              oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#a3b18a;margin-bottom:4px;">Team 2 Status (Right):</label>
+            <input type="text" id="t2StatusInput" placeholder="e.g. 1DN, AS, 2UP"
+              style="width:100%;padding:10px 12px;background:#0d1b2a;border:1px solid #415a77;border-radius:6px;color:#fff;font-size:14px;font-weight:700;outline:none;text-transform:uppercase;"
+              oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <button class="btn" onclick="pushMatchStatus()" style="padding:10px 16px;white-space:nowrap;">📡 Push Status</button>
+          <button class="btn" onclick="clearMatchStatus()" style="padding:10px 14px;white-space:nowrap;background:linear-gradient(135deg,#415a77,#1b263b);color:#fff;">✕ Clear</button>
+        </div>
+
+        <!-- Quick-pick buttons -->
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px;">
+          <span style="font-size:11px;color:#778da9;align-self:center;">Quick pick T1:</span>
+          <button onclick="quickStatus('t1','AS')"   class="qbtn">AS</button>
+          <button onclick="quickStatus('t1','1UP')"  class="qbtn">1UP</button>
+          <button onclick="quickStatus('t1','2UP')"  class="qbtn">2UP</button>
+          <button onclick="quickStatus('t1','3UP')"  class="qbtn">3UP</button>
+          <button onclick="quickStatus('t1','1DN')"  class="qbtn">1DN</button>
+          <button onclick="quickStatus('t1','2DN')"  class="qbtn">2DN</button>
+          <button onclick="quickStatus('t1','3DN')"  class="qbtn">3DN</button>
+          <span style="font-size:11px;color:#778da9;align-self:center;margin-left:8px;">T2:</span>
+          <button onclick="quickStatus('t2','AS')"   class="qbtn">AS</button>
+          <button onclick="quickStatus('t2','1UP')"  class="qbtn">1UP</button>
+          <button onclick="quickStatus('t2','2UP')"  class="qbtn">2UP</button>
+          <button onclick="quickStatus('t2','3UP')"  class="qbtn">3UP</button>
+          <button onclick="quickStatus('t2','1DN')"  class="qbtn">1DN</button>
+          <button onclick="quickStatus('t2','2DN')"  class="qbtn">2DN</button>
+          <button onclick="quickStatus('t2','3DN')"  class="qbtn">3DN</button>
+          <button onclick="quickStatus('t2','4DN')"  class="qbtn">4DN</button>
+          <button onclick="quickStatus('t2','4UP')"  class="qbtn">4UP</button>
+        </div>
+        <div id="match-status-msg" class="status-msg" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- OVERLAYS CATALOG -->
+    <div class="card">
+      <h2>3. Active Team Overlays for OBS / vMix</h2>
+      <div class="links-grid">
+
+        <!-- Live Tabular -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">📊 Live Tabular Standings</div>
+            <div class="link-desc">Transparent in-game table with auto-cycling teams (5 at a time) for live coverage.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/team-standings-live" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/team-standings-live')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Fullscreen -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">🏆 Full-Screen Standings</div>
+            <div class="link-desc">Complete 1080p full-screen graphic showing all 20 teams in a dual-column layout.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/team-standings-full" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/team-standings-full')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Dual Team Overlay -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">⚔️ Dual Team Comparison</div>
+            <div class="link-desc">Lower-third popup displaying the two selected teams side-by-side with logos.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/team-overlay" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/team-overlay')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Group Standings Full -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">🏆 Full-Screen Group Standings</div>
+            <div class="link-desc">Complete 1080p board showing all 5 Groups (A to E) side-by-side with 4 teams each.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/group-standings-full" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/group-standings-full')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Group Standings Live -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">📊 Live Group Standings Bug</div>
+            <div class="link-desc">Transparent in-game table auto-cycling through Groups A, B, C, D, E for live broadcast.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/group-standings-live" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/group-standings-live')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Full-Screen Draw Overlay -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">📅 Full-Screen Tournament Draw</div>
+            <div class="link-desc">1080p broadcast board with 4 Draw Sessions, tee times, format, and team player rosters.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/draw-full" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/draw-full')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Live Draw Bug -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">⏱️ Live Draw Bug (Side-by-Side)</div>
+            <div class="link-desc">Transparent lower-third bug showing Team 1 (left) vs Team 2 (right) with scores & players.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/draw-live" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/draw-live')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Live Draw Bug Stacked -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">⚡ Live Draw Bug (Vertical Stacked - Big Fonts)</div>
+            <div class="link-desc">Vertical bug with Team 2 below Team 1 and extra-large player names & live match play status.</div>
+          </div>
+          <div class="link-actions">
+            <a href="/draw-stacked" target="_blank" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyLink('/draw-stacked')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Golfer Spotlight -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">👤 Golfer Spotlight Lower Third (Port 2000)</div>
+            <div class="link-desc">Lower-third player bio card with photo, club, handicap, and tournament scores.</div>
+          </div>
+          <div class="link-actions">
+            <a href="javascript:void(0)" onclick="openNetworkUrl(2000, '/player')" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyNetworkUrl(2000, '/player')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Golfer Leaderboard -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">🏆 Golfer Leaderboard Board (Port 4000)</div>
+            <div class="link-desc">Full 1080p individual golfer tournament leaderboard with auto-cycling.</div>
+          </div>
+          <div class="link-actions">
+            <a href="javascript:void(0)" onclick="openNetworkUrl(4000, '/')" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyNetworkUrl(4000, '/')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Lower Ticker -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">📺 Running Bottom Ticker (Port 7000)</div>
+            <div class="link-desc">Continuous scrolling broadcast ticker with live team and player scores.</div>
+          </div>
+          <div class="link-actions">
+            <a href="javascript:void(0)" onclick="openNetworkUrl(7000, '/ticker')" class="link-btn primary">Open Overlay</a>
+            <button class="link-btn" onclick="copyNetworkUrl(7000, '/ticker')">Copy URL</button>
+          </div>
+        </div>
+
+        <!-- Golfer Spotlight Control -->
+        <div class="link-box">
+          <div>
+            <div class="link-title">🎛️ Golfer Spotlight Deck (Port 2000)</div>
+            <div class="link-desc">Direct control deck to trigger individual player profile popups on broadcast.</div>
+          </div>
+          <div class="link-actions">
+            <a href="javascript:void(0)" onclick="openNetworkUrl(2000, '/control')" class="link-btn primary">Open Deck</a>
+            <button class="link-btn" onclick="copyNetworkUrl(2000, '/control')">Copy URL</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let playersByTeam = {};
+
+    async function loadPlayers() {
+      try {
+        const res = await fetch('/api/players-by-team');
+        const data = await res.json();
+        if (data.status === 1 && data.players) {
+          playersByTeam = data.players;
+        }
+      } catch (e) {
+        console.warn('Could not pre-load players by team', e);
+      }
+    }
+
+    function renderSquadPills(teamId, pillsContainerId, inputId) {
+      const container = document.getElementById(pillsContainerId);
+      container.innerHTML = '';
+      if (!teamId || !playersByTeam[teamId]) return;
+
+      const players = playersByTeam[teamId];
+      const input = document.getElementById(inputId);
+
+      players.forEach(pName => {
+        const pill = document.createElement('span');
+        pill.textContent = pName;
+        pill.style.cssText = 'cursor:pointer;background:#243b55;border:1px solid #415a77;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;color:#e0e1dd;transition:all 0.15s;user-select:none;';
+
+        const updateHighlight = () => {
+          const current = input.value.split(',').map(s=>s.trim().toLowerCase());
+          if (current.includes(pName.toLowerCase())) {
+            pill.style.background = '#ffd700';
+            pill.style.color = '#0b1a2d';
+            pill.style.borderColor = '#ffd700';
+            pill.style.fontWeight = '800';
+          } else {
+            pill.style.background = '#243b55';
+            pill.style.color = '#e0e1dd';
+            pill.style.borderColor = '#415a77';
+            pill.style.fontWeight = '600';
+          }
+        };
+
+        pill.onclick = () => {
+          let list = input.value ? input.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+          const idx = list.findIndex(n => n.toLowerCase() === pName.toLowerCase());
+          if (idx >= 0) {
+            list.splice(idx, 1);
+          } else {
+            list.push(pName);
+          }
+          input.value = list.join(', ');
+          updateHighlight();
+        };
+
+        container.appendChild(pill);
+      });
+    }
+
+    async function loadTeams() {
+      try {
+        await loadPlayers();
+
+        const res = await fetch('/api/team-list');
+        const data = await res.json();
+
+        const dropdown1 = document.getElementById("team1");
+        const dropdown2 = document.getElementById("team2");
+
+        if (!data || data.status !== 1 || !data.teams || data.teams.length === 0) {
+          dropdown1.innerHTML = '<option value="">No teams found</option>';
+          dropdown2.innerHTML = '<option value="">No teams found</option>';
+          return;
+        }
+
+        dropdown1.innerHTML = '<option value="">-- Choose Team 1 --</option>';
+        dropdown2.innerHTML = '<option value="">-- Choose Team 2 --</option>';
+
+        data.teams.forEach((t, index) => {
+          const opt1 = document.createElement("option");
+          opt1.value = t.teamid;
+          opt1.text = `#${t.position || (index + 1)} - ${t.teamname}`;
+
+          const opt2 = opt1.cloneNode(true);
+          dropdown1.appendChild(opt1);
+          dropdown2.appendChild(opt2);
+        });
+
+        dropdown1.onchange = () => {
+          document.getElementById('players1').value = '';
+          renderSquadPills(dropdown1.value, 'pills1', 'players1');
+        };
+        dropdown2.onchange = () => {
+          document.getElementById('players2').value = '';
+          renderSquadPills(dropdown2.value, 'pills2', 'players2');
+        };
+
+      } catch (err) {
+        console.error('Error loading teams:', err);
+      }
+    }
+
+    async function selectTeams() {
+      const t1 = document.getElementById('team1').value;
+      const t2 = document.getElementById('team2').value;
+      const msg = document.getElementById('status-msg');
+
+      if (!t1 || !t2) {
+        msg.className = 'status-msg error';
+        msg.textContent = '❌ Please select both Team 1 and Team 2';
+        return;
+      }
+      if (t1 === t2) {
+        msg.className = 'status-msg error';
+        msg.textContent = '❌ Team 1 and Team 2 cannot be the same';
+        return;
+      }
+
+      const holeNum = document.getElementById('holeNum').value;
+      const holeParam = holeNum ? `HOLE ${holeNum}` : 'HOLE MATCHUP';
+      const matchStatus = document.getElementById('matchStatus').value;
+      const players1 = document.getElementById('players1').value.trim();
+      const players2 = document.getElementById('players2').value.trim();
+
+      try {
+        const url = `/api/select-teams?team1=${encodeURIComponent(t1)}&team2=${encodeURIComponent(t2)}&hole=${encodeURIComponent(holeParam)}&matchstatus=${encodeURIComponent(matchStatus)}&players1=${encodeURIComponent(players1)}&players2=${encodeURIComponent(players2)}`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (json.success) {
+          msg.className = 'status-msg success';
+          msg.textContent = `✔ Overlay pushed — ${holeParam} · ${matchStatus}`;
+        } else {
+          msg.className = 'status-msg error';
+          msg.textContent = 'Failed to update overlay.';
+        }
+      } catch (e) {
+        msg.className = 'status-msg error';
+        msg.textContent = 'Error connecting to server.';
+      }
+    }
+
+    async function clearTeams() {
+      const msg = document.getElementById('status-msg');
+      try {
+        await fetch('/api/clear-teams');
+        msg.className = 'status-msg success';
+        msg.textContent = '✔ Overlay cleared & hidden.';
+      } catch(e) {
+        msg.className = 'status-msg error';
+        msg.textContent = 'Error clearing overlay.';
+      }
+    }
+
+    function copyLink(path) {
+      const fullUrl = window.location.origin + path;
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        alert('Copied to clipboard:\n' + fullUrl);
+      });
+    }
+
+    function openNetworkUrl(port, path) {
+      const host = window.location.hostname;
+      const url = `http://${host}:${port}${path}`;
+      window.open(url, '_blank');
+    }
+
+    function copyNetworkUrl(port, path) {
+      const host = window.location.hostname;
+      const url = `http://${host}:${port}${path}`;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Copied to clipboard:\n' + url);
+      });
+    }
+
+    let loadedMatches = [];
+
+    async function updateMatchListDropdown() {
+      const dateVal = document.getElementById('drawDateSelect') ? document.getElementById('drawDateSelect').value : '2026-11-27';
+      const sessionVal = document.getElementById('drawSessionSelect').value;
+      const select = document.getElementById('drawMatchHoldSelect');
+      const currentVal = select.value;
+
+      try {
+        const res = await fetch(`/api/draw?date=${encodeURIComponent(dateVal)}&session=${encodeURIComponent(sessionVal)}`);
+        const json = await res.json();
+        if (json.status === 1 && json.matches) {
+          loadedMatches = json.matches;
+          select.innerHTML = '<option value="auto">🔄 Auto-Cycle All Matches (10s each)</option>';
+          loadedMatches.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.matchId;
+            opt.textContent = `[${m.time}] Match ${m.matchNum} (${m.hole}): ${m.team1.name} vs ${m.team2.name}`;
+            select.appendChild(opt);
+          });
+          if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+            select.value = currentVal;
+          }
+        }
+      } catch(e) {
+        console.warn('Could not update match dropdown', e);
+      }
+    }
+
+    async function applyDrawControl() {
+      const dateVal = document.getElementById('drawDateSelect').value;
+      const sessionVal = document.getElementById('drawSessionSelect').value;
+      const matchHoldVal = document.getElementById('drawMatchHoldSelect').value;
+      const msg = document.getElementById('draw-date-msg');
+
+      try {
+        // Set date
+        await fetch(`/api/set-draw-date?date=${encodeURIComponent(dateVal)}`);
+
+        // Set session & match hold
+        const ctrlUrl = `/api/control-draw?session=${encodeURIComponent(sessionVal)}&matchId=${encodeURIComponent(matchHoldVal)}`;
+        const res = await fetch(ctrlUrl);
+        const json = await res.json();
+
+        if (json.success) {
+          msg.className = 'status-msg success';
+          const holdText = json.heldMatchId ? `🔒 HELD ON MATCH ${json.heldMatchId} (GFX will not auto-advance until released)` : '🔄 AUTO-CYCLING';
+          msg.textContent = `✔ Draw GFX updated — Date: ${dateVal} | Session: ${json.session.toUpperCase()} | Mode: ${holdText}`;
+        } else {
+          msg.className = 'status-msg error';
+          msg.textContent = 'Failed to update draw control.';
+        }
+      } catch (e) {
+        msg.className = 'status-msg error';
+        msg.textContent = 'Error connecting to server.';
+      }
+    }
+
+    async function releaseDrawHold() {
+      document.getElementById('drawMatchHoldSelect').value = 'auto';
+      await applyDrawControl();
+    }
+
+    loadTeams();
+    updateMatchListDropdown();
+
+    async function onMatchHoldChange() {
+      const matchId = document.getElementById('drawMatchHoldSelect').value;
+      if (!matchId || matchId === 'auto') {
+        document.getElementById('t1StatusInput').value = '';
+        document.getElementById('t2StatusInput').value = '';
+        return;
+      }
+      try {
+        const res = await fetch('/api/draw');
+        const json = await res.json();
+        if (json.matches) {
+          const m = json.matches.find(x => x.matchId === matchId);
+          if (m) {
+            document.getElementById('t1StatusInput').value = (m.team1 && m.team1.matchStatus) ? m.team1.matchStatus : '';
+            document.getElementById('t2StatusInput').value = (m.team2 && m.team2.matchStatus) ? m.team2.matchStatus : '';
+          }
+        }
+      } catch(e) {}
+    }
+    document.getElementById('drawMatchHoldSelect').addEventListener('change', onMatchHoldChange);
+
+    // ── MANUAL MATCH PLAY STATUS ──
+    function quickStatus(team, val) {
+      const id = team === 't1' ? 't1StatusInput' : 't2StatusInput';
+      document.getElementById(id).value = val;
+    }
+
+    async function pushMatchStatus() {
+      const matchId = document.getElementById('drawMatchHoldSelect').value;
+      const t1 = document.getElementById('t1StatusInput').value.trim().toUpperCase();
+      const t2 = document.getElementById('t2StatusInput').value.trim().toUpperCase();
+      const msg = document.getElementById('match-status-msg');
+
+      if (!matchId || matchId === 'auto') {
+        msg.className = 'status-msg error';
+        msg.textContent = '❌ Please hold a specific match first (use the "Hold on Active Match" dropdown above and click Apply Draw Control).';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/control-draw?matchId=${encodeURIComponent(matchId)}&t1Status=${encodeURIComponent(t1)}&t2Status=${encodeURIComponent(t2)}`);
+        const json = await res.json();
+        msg.className = 'status-msg success';
+        msg.textContent = `✔ Status pushed — Match ${matchId}: T1 = ${t1 || '(cleared)'} | T2 = ${t2 || '(cleared)'}`;
+      } catch(e) {
+        msg.className = 'status-msg error';
+        msg.textContent = 'Error connecting to server.';
+      }
+    }
+
+    async function clearMatchStatus() {
+      const matchId = document.getElementById('drawMatchHoldSelect').value;
+      const msg = document.getElementById('match-status-msg');
+      document.getElementById('t1StatusInput').value = '';
+      document.getElementById('t2StatusInput').value = '';
+      if (matchId && matchId !== 'auto') {
+        try {
+          await fetch(`/api/control-draw?matchId=${encodeURIComponent(matchId)}&t1Status=&t2Status=`);
+          msg.className = 'status-msg success';
+          msg.textContent = `✔ Status cleared for Match ${matchId}.`;
+        } catch(e) {
+          msg.className = 'status-msg error';
+          msg.textContent = 'Error clearing status.';
+        }
+      } else {
+        msg.className = 'status-msg';
+        msg.textContent = 'Fields cleared (no active match held).';
+      }
+    }
+  </script>
+</body>
+</html>

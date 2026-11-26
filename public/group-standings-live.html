@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Golf League - Live Broadcast Group Table</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      position: relative;
+    }
+
+    /* Floating Tabular Card Container */
+    .table-card {
+      position: absolute;
+      left: 60px;
+      top: 150px;
+      width: 580px;
+      background: linear-gradient(180deg, rgba(8, 20, 36, 0.96) 0%, rgba(12, 30, 52, 0.94) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      border-radius: 12px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      color: #ffffff;
+      animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-60px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* CARD HEADER */
+    .card-header {
+      background: linear-gradient(90deg, #0f2744 0%, #1a4170 100%);
+      border-bottom: 2px solid #ffd700;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(220, 38, 38, 0.25);
+      border: 1px solid #ff4444;
+      color: #ff5555;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: #ff3333;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    .header-text {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ffffff, #d2e4f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .group-pill {
+      font-size: 13px;
+      font-weight: 900;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* TABLE HEADERS */
+    .table-head {
+      display: grid;
+      grid-template-columns: 50px 1fr 75px;
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.35);
+      font-size: 11px;
+      font-weight: 800;
+      color: #79a8d7;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      align-items: center;
+    }
+    .col-center { text-align: center; }
+    .col-right { text-align: right; }
+
+    /* TABLE ROWS */
+    .table-body {
+      display: flex;
+      flex-direction: column;
+    }
+    .table-row {
+      display: grid;
+      grid-template-columns: 50px 1fr 75px;
+      padding: 12px 16px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+    .table-row:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Rank badges */
+    .row-pos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 900;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cfddec;
+    }
+    .pos-1 {
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #0b1a2d;
+      font-weight: 900;
+    }
+    .pos-2 {
+      background: linear-gradient(135deg, #d8d8d8, #999999);
+      color: #0b1a2d;
+      font-weight: 900;
+    }
+
+    /* Team Cell */
+    .row-team {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      padding-right: 10px;
+    }
+    .team-logo-small {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .team-name-text {
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+    }
+
+    /* Points cells */
+    .row-round-pts {
+      font-size: 13px;
+      font-weight: 700;
+      color: #9ac2ea;
+      text-align: center;
+    }
+    .row-total-pts {
+      font-size: 19px;
+      font-weight: 900;
+      color: #ffd700;
+      text-align: right;
+      letter-spacing: -0.5px;
+    }
+
+    /* CARD FOOTER */
+    .card-footer {
+      background: rgba(5, 14, 26, 0.85);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #6e99c4;
+      font-weight: 700;
+    }
+    .progress-bar-container {
+      width: 140px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: #ffd700;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="table-card" id="table-card">
+    <!-- Header -->
+    <div class="card-header">
+      <div class="header-title-box">
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          LIVE
+        </div>
+        <div class="header-text">GROUP STANDINGS</div>
+      </div>
+      <div class="group-pill" id="group-pill">GROUP A</div>
+    </div>
+
+    <!-- Table Header Columns -->
+    <div class="table-head">
+      <div class="col-center">POS</div>
+      <div>TEAM</div>
+      <div class="col-right">TOTAL</div>
+    </div>
+
+    <!-- Table Rows -->
+    <div class="table-body" id="table-rows"></div>
+
+    <!-- Footer with Pagination & Progress -->
+    <div class="card-footer">
+      <div id="page-indicator">GROUP 1 OF 5 (GROUP A)</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allGroups = [];
+    let currentGroupIndex = 0;
+    const CYCLE_DURATION = 12000; // ⏱️ Exactly 12 seconds per group
+    let cycleTimer = null;
+    let progressTimer = null;
+    let progressStart = 0;
+
+    // Check query params for locked group: e.g. ?group=A or ?group=203
+    const urlParams = new URLSearchParams(window.location.search);
+    const lockedGroupParam = urlParams.get('group');
+
+    async function fetchGroupStandings() {
+      try {
+        const res = await fetch('/api/group-standings');
+        const data = await res.json();
+
+        if (!data || data.status !== 1 || !data.groups) return;
+
+        allGroups = data.groups;
+
+        if (lockedGroupParam) {
+          const matchIdx = allGroups.findIndex(g =>
+            g.groupname.toLowerCase().includes(lockedGroupParam.toLowerCase()) ||
+            g.groupid === lockedGroupParam
+          );
+          if (matchIdx !== -1) {
+            currentGroupIndex = matchIdx;
+          }
+        }
+
+        renderCurrentGroup();
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function renderCurrentGroup() {
+      if (allGroups.length === 0) return;
+
+      const group = allGroups[currentGroupIndex];
+      const groupName = group.groupname || `Group ${String.fromCharCode(65 + currentGroupIndex)}`;
+      document.getElementById('group-pill').textContent = groupName;
+
+      // Server returns group.teams (already sorted with live points merged)
+      const teams = group.teams || group.teams_and_scores?.allscores || [];
+
+      const tableRows = document.getElementById('table-rows');
+      tableRows.innerHTML = '';
+
+      teams.forEach((team, idx) => {
+        const rank = team.position || (idx + 1);
+        const rankNum = parseInt(rank, 10) || (idx + 1);
+        const row = document.createElement('div');
+        row.className = 'table-row';
+
+        let posClass = 'row-pos';
+        if (rankNum === 1) posClass += ' pos-1';
+        else if (rankNum === 2) posClass += ' pos-2';
+
+        const logo = team.teamlogo || 'https://onlinegolfapp.com/assets/images/teamlogo/default.png';
+        const total = (team.Totalpoints !== undefined && team.Totalpoints !== null) ? team.Totalpoints : 0;
+
+        row.innerHTML = `
+          <div><div class="${posClass}">${rank}</div></div>
+          <div class="row-team">
+            <img class="team-logo-small" src="${logo}" onerror="this.style.display='none'">
+            <div class="team-name-text">${team.teamname || 'TEAM ' + rank}</div>
+          </div>
+          <div class="row-total-pts">${total}</div>
+        `;
+
+        tableRows.appendChild(row);
+      });
+
+      document.getElementById('page-indicator').textContent =
+        `GROUP ${currentGroupIndex + 1} OF ${allGroups.length} (${groupName.toUpperCase()})`;
+
+      if (!lockedGroupParam) {
+        resetProgressBar();
+      } else {
+        document.getElementById('progress-bar').style.width = '100%';
+      }
+    }
+
+    function resetProgressBar() {
+      const bar = document.getElementById('progress-bar');
+      bar.style.width = '0%';
+      progressStart = Date.now();
+
+      if (progressTimer) clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        const elapsed = Date.now() - progressStart;
+        const pct = Math.min(100, (elapsed / CYCLE_DURATION) * 100);
+        bar.style.width = pct + '%';
+        if (pct >= 100) clearInterval(progressTimer);
+      }, 50);
+    }
+
+    function startCycle() {
+      if (lockedGroupParam) return; // Don't cycle if locked to a specific group
+      if (cycleTimer) clearInterval(cycleTimer);
+      cycleTimer = setInterval(() => {
+        if (allGroups.length > 0) {
+          currentGroupIndex = (currentGroupIndex + 1) % allGroups.length;
+          renderCurrentGroup();
+        }
+      }, CYCLE_DURATION);
+    }
+
+    fetchGroupStandings().then(() => {
+      startCycle();
+    });
+
+    setInterval(fetchGroupStandings, 10000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Golf League - Live Broadcast Team Table</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      position: relative;
+    }
+
+    /* Floating Tabular Card Container */
+    .table-card {
+      position: absolute;
+      left: 60px;
+      top: 140px;
+      width: 580px;
+      background: linear-gradient(180deg, rgba(8, 20, 36, 0.96) 0%, rgba(12, 30, 52, 0.94) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      border-radius: 12px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      color: #ffffff;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-80px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* CARD HEADER */
+    .card-header {
+      background: linear-gradient(90deg, #0f2744 0%, #1a4170 100%);
+      border-bottom: 2px solid #ffd700;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(220, 38, 38, 0.25);
+      border: 1px solid #ff4444;
+      color: #ff5555;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+    }
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: #ff3333;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    .header-text {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ffffff, #d2e4f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-round {
+      font-size: 12px;
+      font-weight: 800;
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* TABLE HEADERS */
+    .table-head {
+      display: grid;
+      grid-template-columns: 50px 1fr 48px 48px 65px;
+      padding: 8px 16px;
+      background: rgba(0, 0, 0, 0.35);
+      font-size: 11px;
+      font-weight: 800;
+      color: #79a8d7;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      align-items: center;
+    }
+    .col-center { text-align: center; }
+    .col-right { text-align: right; }
+
+    /* TABLE BODY */
+    .table-body {
+      display: flex;
+      flex-direction: column;
+    }
+    .table-row {
+      display: grid;
+      grid-template-columns: 50px 1fr 48px 48px 65px;
+      padding: 10px 16px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .table-row:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .table-row:last-child {
+      border-bottom: none;
+    }
+
+    /* Rank badges */
+    .row-pos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 900;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cfddec;
+    }
+    .pos-1 {
+      background: linear-gradient(135deg, #ffd700, #b8860b);
+      color: #0b1a2d;
+      font-weight: 900;
+    }
+    .pos-2 {
+      background: linear-gradient(135deg, #d8d8d8, #999999);
+      color: #0b1a2d;
+      font-weight: 900;
+    }
+    .pos-3 {
+      background: linear-gradient(135deg, #e69a53, #9e5b22);
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    /* Team cell */
+    .row-team {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      padding-right: 10px;
+    }
+    .team-logo-small {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .team-name-text {
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ffffff;
+    }
+
+    /* Points cells */
+    .row-round-pts {
+      font-size: 13px;
+      font-weight: 700;
+      color: #9ac2ea;
+      text-align: center;
+    }
+    .row-total-pts {
+      font-size: 18px;
+      font-weight: 900;
+      color: #ffd700;
+      text-align: right;
+      letter-spacing: -0.5px;
+    }
+
+    /* CARD FOOTER WITH CYCLE PROGRESS */
+    .card-footer {
+      background: rgba(5, 14, 26, 0.85);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 7px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #6e99c4;
+      font-weight: 700;
+    }
+    .progress-bar-container {
+      width: 140px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: #ffd700;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="table-card" id="table-card">
+    <!-- Header -->
+    <div class="card-header">
+      <div class="header-title-box">
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          LIVE
+        </div>
+        <div class="header-text">TEAM STANDINGS</div>
+      </div>
+      <div class="header-round" id="round-label">OVERALL</div>
+    </div>
+
+    <!-- Table Header Columns -->
+    <div class="table-head">
+      <div class="col-center">POS</div>
+      <div>TEAM</div>
+      <div class="col-center">R1</div>
+      <div class="col-center">R2</div>
+      <div class="col-right">TOTAL</div>
+    </div>
+
+    <!-- Table Rows -->
+    <div class="table-body" id="table-rows"></div>
+
+    <!-- Footer with Pagination & Progress -->
+    <div class="card-footer">
+      <div id="page-indicator">TEAMS 1 - 5 (PAGE 1/4)</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allTeams = [];
+    let currentPage = 0;
+    const PAGE_SIZE = 5; // Show 5 teams at a time during live broadcast
+    const CYCLE_DURATION = 7000; // 7 seconds per page
+    let cycleTimer = null;
+    let progressTimer = null;
+    let progressStart = 0;
+
+    async function fetchStandings() {
+      try {
+        const res = await fetch('/api/team-standings');
+        const data = await res.json();
+
+        if (!data || data.status !== 1 || !data.teams) return;
+
+        document.getElementById('round-label').textContent = 'OVERALL';
+
+        allTeams = data.teams;
+        // Sort teams by position or points
+        allTeams.sort((a, b) => {
+          const posA = parseInt(a.position, 10) || 999;
+          const posB = parseInt(b.position, 10) || 999;
+          if (posA !== posB) return posA - posB;
+          return (parseFloat(b.Totalpoints) || 0) - (parseFloat(a.Totalpoints) || 0);
+        });
+
+        renderCurrentPage();
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function renderCurrentPage() {
+      if (allTeams.length === 0) return;
+
+      const totalPages = Math.ceil(allTeams.length / PAGE_SIZE);
+      if (currentPage >= totalPages) currentPage = 0;
+
+      const startIndex = currentPage * PAGE_SIZE;
+      const pageTeams = allTeams.slice(startIndex, startIndex + PAGE_SIZE);
+      const endIndex = Math.min(startIndex + PAGE_SIZE, allTeams.length);
+
+      const tableRows = document.getElementById('table-rows');
+      tableRows.innerHTML = '';
+
+      pageTeams.forEach((team, idx) => {
+        const rank = startIndex + idx + 1;
+        const row = document.createElement('div');
+        row.className = 'table-row';
+
+        let posClass = 'row-pos';
+        if (rank === 1) posClass += ' pos-1';
+        else if (rank === 2) posClass += ' pos-2';
+        else if (rank === 3) posClass += ' pos-3';
+
+        const logo = team.teamlogo || 'https://onlinegolfapp.com/assets/images/teamlogo/default.png';
+        const r1 = team.roundpoints?.R1 || 0;
+        const r2 = team.roundpoints?.R2 || 0;
+        const total = team.Totalpoints || 0;
+
+        row.innerHTML = `
+          <div><div class="${posClass}">${rank}</div></div>
+          <div class="row-team">
+            <img class="team-logo-small" src="${logo}" onerror="this.style.display='none'">
+            <div class="team-name-text">${team.teamname || 'TEAM ' + rank}</div>
+          </div>
+          <div class="row-round-pts">${r1}</div>
+          <div class="row-round-pts">${r2}</div>
+          <div class="row-total-pts">${total}</div>
+        `;
+
+        tableRows.appendChild(row);
+      });
+
+      document.getElementById('page-indicator').textContent =
+        `TEAMS ${startIndex + 1} - ${endIndex} (PAGE ${currentPage + 1}/${totalPages})`;
+
+      resetProgressBar();
+    }
+
+    function resetProgressBar() {
+      const bar = document.getElementById('progress-bar');
+      bar.style.width = '0%';
+      progressStart = Date.now();
+
+      if (progressTimer) clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        const elapsed = Date.now() - progressStart;
+        const pct = Math.min(100, (elapsed / CYCLE_DURATION) * 100);
+        bar.style.width = pct + '%';
+        if (pct >= 100) clearInterval(progressTimer);
+      }, 50);
+    }
+
+    function startCycle() {
+      if (cycleTimer) clearInterval(cycleTimer);
+      cycleTimer = setInterval(() => {
+        const totalPages = Math.ceil(allTeams.length / PAGE_SIZE) || 1;
+        currentPage = (currentPage + 1) % totalPages;
+        renderCurrentPage();
+      }, CYCLE_DURATION);
+    }
+
+    // Initial load and cycle
+    fetchStandings().then(() => {
+      startCycle();
+    });
+
+    // Re-poll API every 10 seconds for live score updates
+    setInterval(fetchStandings, 10000);
+  </script>
+</body>
+</html>

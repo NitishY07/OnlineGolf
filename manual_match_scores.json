@@ -1,0 +1,162 @@
+{
+  "A1": {
+    "t1Status": "4UP",
+    "t2Status": "4DN"
+  },
+  "A4": {
+    "t1Status": "1DN",
+    "t2Status": "1UP"
+  },
+  "A13": {
+    "t1Status": "2UP",
+    "t2Status": "2DN"
+  },
+  "A5": {
+    "t1Status": "1UP",
+    "t2Status": "1DN"
+  },
+  "A6": {
+    "t1Status": "4UP",
+    "t2Status": "4DN"
+  },
+  "A7": {
+    "t1Status": "2DN",
+    "t2Status": "2UP"
+  },
+  "A8": {
+    "t1Status": "AS",
+    "t2Status": "AS"
+  },
+  "A14": {
+    "t1Status": ".",
+    "t2Status": "."
+  },
+  "A12": {
+    "t1Status": "1DN",
+    "t2Status": "1UP"
+  },
+  "M1": {
+    "t1Status": "",
+    "t2Status": ""
+  },
+  "D2M1": {
+    "t1Status": "",
+    "t2Status": "",
+    "cleared": true
+  },
+  "D2M9": {
+    "t1Status": "1UP",
+    "t2Status": "1DN",
+    "cleared": false
+  },
+  "D2M6": {
+    "t1Status": "AS",
+    "t2Status": "AS",
+    "cleared": false
+  },
+  "D2M2": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2M10": {
+    "t1Status": "AS",
+    "t2Status": "AS",
+    "cleared": false
+  },
+  "D2M3": {
+    "t1Status": "AS",
+    "t2Status": "AS",
+    "cleared": false
+  },
+  "D2M11": {
+    "t1Status": "4UP",
+    "t2Status": "4DN",
+    "cleared": false
+  },
+  "D2M7": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2M8": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2M15": {
+    "t1Status": "2UP",
+    "t2Status": "2DN",
+    "cleared": false
+  },
+  "D2M4": {
+    "t1Status": "2UP",
+    "t2Status": "2DN",
+    "cleared": false
+  },
+  "D2M13": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2A1": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2A8": {
+    "t1Status": "AS",
+    "t2Status": "AS",
+    "cleared": false
+  },
+  "D2A2": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2A9": {
+    "t1Status": "3UP",
+    "t2Status": "3DN",
+    "cleared": false
+  },
+  "D2A3": {
+    "t1Status": "AS",
+    "t2Status": "AS",
+    "cleared": false
+  },
+  "D2A4": {
+    "t1Status": "1UP",
+    "t2Status": "1DN",
+    "cleared": false
+  },
+  "D2A10": {
+    "t1Status": "1DN",
+    "t2Status": "1UP",
+    "cleared": false
+  },
+  "D2A11": {
+    "t1Status": "2UP",
+    "t2Status": "2DN",
+    "cleared": false
+  },
+  "D2A12": {
+    "t1Status": "1UP",
+    "t2Status": "1DN",
+    "cleared": false
+  },
+  "D2A15": {
+    "t1Status": "2UP",
+    "t2Status": "2DN",
+    "cleared": false
+  },
+  "D2A14": {
+    "t1Status": "2UP",
+    "t2Status": "2DN",
+    "cleared": false
+  },
+  "R2D1M1": {
+    "t1Status": "",
+    "t2Status": "",
+    "cleared": true
+  }
+}
