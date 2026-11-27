@@ -79,6 +79,109 @@ async function getPlayersForTeam(teamid) {
   return playerCache[teamid] || [];
 }
 
+// ── Clean string helper ──
+function cleanStr(n) {
+  return (n || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+}
+
+// ── Match Play Points Cache & Fetcher (ajax_get_league_leaderboardpoints) ──
+let leaderboardPointsCache = {
+  timestamp: 0,
+  round: null,
+  matches: []
+};
+const LEADERBOARD_POINTS_TTL_MS = 15000; // 15 seconds
+
+async function getLeaderboardMatchPoints(targetRound, activeTeamIds) {
+  const now = Date.now();
+  if (
+    leaderboardPointsCache.round === targetRound &&
+    now - leaderboardPointsCache.timestamp < LEADERBOARD_POINTS_TTL_MS &&
+    leaderboardPointsCache.matches.length > 0
+  ) {
+    return leaderboardPointsCache.matches;
+  }
+
+  try {
+    const list = Array.from(activeTeamIds);
+    if (list.length === 0) return leaderboardPointsCache.matches;
+
+    const results = await Promise.all(
+      list.map(id =>
+        postJson('/ajax_get_league_leaderboardpoints', {
+          league: LEAGUE_ID,
+          rtype: targetRound,
+          teamid: id
+        })
+      )
+    );
+
+    const rKey = `R${targetRound}_playernames`;
+    const collected = [];
+    results.forEach(d => {
+      const rp = d && d.data && d.data.scores && d.data.scores[0] && d.data.scores[0].roundpoints;
+      if (rp && Array.isArray(rp[rKey])) {
+        collected.push(...rp[rKey]);
+      }
+    });
+
+    if (collected.length > 0) {
+      leaderboardPointsCache = {
+        timestamp: now,
+        round: targetRound,
+        matches: collected
+      };
+    }
+    return leaderboardPointsCache.matches;
+  } catch (err) {
+    console.error('Error fetching ajax_get_league_leaderboardpoints:', err.message);
+    return leaderboardPointsCache.matches;
+  }
+}
+
+function extractMatchPlayStatus(item, isTeam1Direct) {
+  let w1 = String(item.team1won || '').trim();
+  let w2 = String(item.team2won || '').trim();
+  let c1 = String(item.team1_current || '').trim();
+  let c2 = String(item.team2_current || '').trim();
+
+  // If match finished with a winner
+  if (w1 || w2) {
+    function parseWon(s) {
+      if (!s) return '';
+      const upper = s.toUpperCase();
+      if (upper.includes('TIED') || upper === 'ALL SQUARE' || upper === 'AS') return 'AS';
+      const m = upper.match(/(?:WON\s+)?(\d+[\s&]+\d+|\d+UP|\d+DN)/i);
+      if (m) return m[1].replace(/\s+/g, '');
+      return upper;
+    }
+    const p1 = parseWon(w1);
+    const p2 = parseWon(w2);
+    if (p1 && !p2) {
+      const t1 = p1;
+      const t2 = p1.includes('UP') ? p1.replace('UP', 'DN') : (p1.includes('&') ? 'DN' : '');
+      return isTeam1Direct ? { t1Status: t1, t2Status: t2 } : { t1Status: t2, t2Status: t1 };
+    }
+    if (p2 && !p1) {
+      const t2 = p2;
+      const t1 = p2.includes('UP') ? p2.replace('UP', 'DN') : (p2.includes('&') ? 'DN' : '');
+      return isTeam1Direct ? { t1Status: t1, t2Status: t2 } : { t1Status: t2, t2Status: t1 };
+    }
+    if (p1 && p2) {
+      return isTeam1Direct ? { t1Status: p1, t2Status: p2 } : { t1Status: p2, t2Status: p1 };
+    }
+  }
+
+  // Live in-progress scores
+  if (c1 || c2) {
+    const t1 = isTeam1Direct ? c1 : c2;
+    const t2 = isTeam1Direct ? c2 : c1;
+    return { t1Status: t1, t2Status: t2 };
+  }
+
+  return { t1Status: '', t2Status: '' };
+}
+
 // ------------------- POST FUNCTION -------------------
 async function postJson(endpoint, body){
   try {
@@ -313,31 +416,30 @@ app.get('/api/draw', async (req, res) => {
     // Fetch official Draw List API for real-time match play status (team1won / team2won)
     const targetDate = req.query.date || selectedDrawDate || '2026-11-20';
     const targetRound = (targetDate === '2026-11-27' || targetDate === '2026-11-28') ? '2' : '1';
-    let apiDrawMatches = [];
-    try {
-      const [drawS1, drawS2] = await Promise.all([
-        postJson('/ajax_draw_list_api', { league: LEAGUE_ID, round: targetRound, date: targetDate, session: '1' }),
-        postJson('/ajax_draw_list_api', { league: LEAGUE_ID, round: targetRound, date: targetDate, session: '2' })
-      ]);
-      const list1 = (drawS1 && drawS1.data && Array.isArray(drawS1.data.plydraw)) ? drawS1.data.plydraw : [];
-      const list2 = (drawS2 && drawS2.data && Array.isArray(drawS2.data.plydraw)) ? drawS2.data.plydraw : [];
-      apiDrawMatches = [...list1, ...list2];
-    } catch(err) {
-      console.log('Error fetching ajax_draw_list_api:', err.message);
-    }
-
-    // Fetch individual leaderboard scores to calculate live match play status (AS, 1UP, 1DN, 2UP, etc.)
-    const indData = await postJson(
-      '/ajax_get_league_individual_leaderboard',
-      { league: LEAGUE_ID, round: ROUND_TYPE, roundtype: ROUND_TYPE }
-    );
-    const allIndividualScores = (indData && indData.data && Array.isArray(indData.data.allscores))
-      ? indData.data.allscores
-      : [];
 
     if (Date.now() - playerCacheTime > CACHE_TTL_MS) {
       await refreshPlayerCache();
     }
+
+    // Collect unique team IDs from base matches for leaderboard points fetch
+    const activeTeamIds = new Set();
+    const allSchedules = [
+      ...(morningScheduleRound2Day1 || []),
+      ...(afternoonScheduleRound2Day1 || []),
+      ...(morningSchedule || []),
+      ...(afternoonSchedule || []),
+      ...(morningScheduleDay2 || []),
+      ...(afternoonScheduleDay2 || [])
+    ];
+    allSchedules.forEach(m => {
+      const t1 = teams.find(t => t.teamname && cleanStr(t.teamname) === cleanStr(m.team1.name));
+      const t2 = teams.find(t => t.teamname && cleanStr(t.teamname) === cleanStr(m.team2.name));
+      if (t1) activeTeamIds.add(t1.teamid);
+      if (t2) activeTeamIds.add(t2.teamid);
+    });
+
+    // Fetch live match play status from ajax_get_league_leaderboardpoints (cached 15s)
+    const liveMatchPlayData = await getLeaderboardMatchPoints(targetRound, activeTeamIds);
 
     const allSessions = (drawData && drawData.data && Array.isArray(drawData.data))
       ? drawData.data
@@ -421,103 +523,45 @@ app.get('/api/draw', async (req, res) => {
         if (t2Info.matchStatus) matchCopy.team2.matchStatus = t2Info.matchStatus;
       }
 
-      // ── Calculate Live Match Play Status (AS, 1UP, 2UP, 1DN, 2DN, etc.) directly from API ──
-      function cleanStr(n) {
-        return (n || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      }
-
-      function getPlayerPts(pName, teamName) {
-        if (!pName) return 0;
-        const c = cleanStr(pName);
-        const tc = cleanStr(teamName);
-
-        // 1st: match within the team
-        let found = allIndividualScores.find(p => {
-          const sameTeam = cleanStr(p.teamname) === tc || cleanStr(p.teamname).includes(tc) || tc.includes(cleanStr(p.teamname));
-          if (!sameTeam) return false;
-          const fn = cleanStr(p.glfname);
-          return fn === c || fn.includes(c) || c.includes(fn);
-        });
-
-        // 2nd: fallback across all players
-        if (!found) {
-          found = allIndividualScores.find(p => {
-            const fn = cleanStr(p.glfname);
-            return fn === c || fn.includes(c) || c.includes(fn);
-          });
-        }
-
-        if (!found) return 0;
-        // For Round 2 (27 & 28 Nov), read R2 round points. For Round 1 (20 & 21 Nov), read R1 round points.
-        if (targetDate === '2026-11-27' || targetDate === '2026-11-28') {
-          return Number(found.roundpoints?.R2) || 0;
-        } else {
-          return Number(found.roundpoints?.R1) || Number(found.Totalpoints) || 0;
-        }
-      }
-
-      const t1p1Pts = getPlayerPts(matchCopy.team1.players[0]?.name, matchCopy.team1.name);
-      const t1p2Pts = getPlayerPts(matchCopy.team1.players[1]?.name, matchCopy.team1.name);
-      const t2p1Pts = getPlayerPts(matchCopy.team2.players[0]?.name, matchCopy.team2.name);
-      const t2p2Pts = getPlayerPts(matchCopy.team2.players[1]?.name, matchCopy.team2.name);
-
-      const t1Sum = t1p1Pts + t1p2Pts;
-      const t2Sum = t2p1Pts + t2p2Pts;
-
-      // ── Check official Draw API for match status (team1won / team2won) ──
+      // ── Live Match Play Status from ajax_get_league_leaderboardpoints ──
       const t1Clean = cleanStr(matchCopy.team1.name);
       const t2Clean = cleanStr(matchCopy.team2.name);
       const mHoleNum = (matchCopy.hole || '').replace(/[^0-9]/g, '');
       const mTimeClean = cleanStr(matchCopy.time);
+      const mCat = cleanStr(matchCopy.bonusTag || '');
+      const mSession = (matchCopy.sessionKey === 'morning') ? '1' : (matchCopy.sessionKey === 'afternoon') ? '2' : '';
 
-      const matchedApiDraw = apiDrawMatches.find(item => {
-        const a1 = cleanStr(item.team1name);
-        const a2 = cleanStr(item.team2name);
+      // Find this match in liveMatchPlayData (from ajax_get_league_leaderboardpoints)
+      const matchedLive = liveMatchPlayData.find(apiM => {
+        const a1 = cleanStr(apiM.team1);
+        const a2 = cleanStr(apiM.team2);
         const teamsMatch = (a1 === t1Clean && a2 === t2Clean) || (a1 === t2Clean && a2 === t1Clean);
         if (!teamsMatch) return false;
-        // Check slot time or hole if multiple matches between same teams
-        const aTime = cleanStr(item.ldr_slot_time);
-        const aHole = String(item.ldr_hole || '').trim();
-        return (!mHoleNum || !aHole || mHoleNum === aHole) && (!mTimeClean || !aTime || mTimeClean.slice(0, 4) === aTime.slice(0, 4));
-      }) || apiDrawMatches.find(item => {
-        const a1 = cleanStr(item.team1name);
-        const a2 = cleanStr(item.team2name);
-        return (a1 === t1Clean && a2 === t2Clean) || (a1 === t2Clean && a2 === t1Clean);
+
+        const drw = apiM.drw1 && apiM.drw1[0];
+        const aHole = String(drw ? drw.ldr_hole : '').trim();
+        const aTime = cleanStr(drw ? drw.ldr_slot_time : '');
+        const aCat = cleanStr(apiM.category_label || '');
+        const aSession = String(drw ? drw.crw_session : '');
+
+        // Filter by session (morning=1, afternoon=2)
+        if (mSession && aSession && mSession !== aSession) return false;
+
+        // Best match: same category label (e.g. "P1 - Seq Match")
+        if (mCat && aCat && mCat === aCat) return true;
+        // Fallback: same time + same hole
+        if (mTimeClean && aTime && mTimeClean.slice(0, 4) === aTime.slice(0, 4) && (!mHoleNum || !aHole || mHoleNum === aHole)) return true;
+        return false;
       });
 
-      let drawApiT1Status = '';
-      let drawApiT2Status = '';
-      if (matchedApiDraw) {
-        const isTeam1Direct = cleanStr(matchedApiDraw.team1name) === t1Clean;
-        const rawW1 = String((isTeam1Direct ? matchedApiDraw.team1won : matchedApiDraw.team2won) || '').trim();
-        const rawW2 = String((isTeam1Direct ? matchedApiDraw.team2won : matchedApiDraw.team1won) || '').trim();
+      let liveT1Status = '';
+      let liveT2Status = '';
 
-        function parseWonStatus(str) {
-          if (!str) return '';
-          const s = str.trim().toUpperCase();
-          if (s.includes('TIED') || s === 'ALL SQUARE' || s === 'AS') return 'AS';
-          // e.g. "WON 4&2", "WON 3&1", "4&2", "3&1", "1UP", "2UP"
-          const mLead = s.match(/(?:WON\s+)?(\d+[\s&]+\d+|\d+UP|\d+DN)/i);
-          if (mLead) {
-            return mLead[1].replace(/\s+/g, '');
-          }
-          if (s.includes('PLAYOFF')) return 'PLAYOFF';
-          return s;
-        }
-
-        const parsed1 = parseWonStatus(rawW1);
-        const parsed2 = parseWonStatus(rawW2);
-
-        if (parsed1 && !parsed2) {
-          drawApiT1Status = parsed1;
-          drawApiT2Status = parsed1.includes('UP') ? parsed1.replace('UP', 'DN') : (parsed1.includes('&') ? 'DN' : '');
-        } else if (parsed2 && !parsed1) {
-          drawApiT2Status = parsed2;
-          drawApiT1Status = parsed2.includes('UP') ? parsed2.replace('UP', 'DN') : (parsed2.includes('&') ? 'DN' : '');
-        } else if (parsed1 && parsed2) {
-          drawApiT1Status = parsed1;
-          drawApiT2Status = parsed2;
-        }
+      if (matchedLive) {
+        const isDirect = cleanStr(matchedLive.team1) === t1Clean;
+        const result = extractMatchPlayStatus(matchedLive, isDirect);
+        liveT1Status = result.t1Status;
+        liveT2Status = result.t2Status;
       }
 
       // Check if manual/control match play override is present for this match
@@ -536,34 +580,16 @@ app.get('/api/draw', async (req, res) => {
           matchCopy.team2.matchStatus = t2st;
           matchCopy.noScoresYet = false;
         }
-      } else if (drawApiT1Status || drawApiT2Status) {
-        // Priority 1: Official match status directly from ajax_draw_list_api (team1won / team2won)
-        matchCopy.team1.matchStatus = drawApiT1Status;
-        matchCopy.team2.matchStatus = drawApiT2Status;
+      } else if (liveT1Status || liveT2Status) {
+        // Live match play status from ajax_get_league_leaderboardpoints
+        matchCopy.team1.matchStatus = liveT1Status;
+        matchCopy.team2.matchStatus = liveT2Status;
         matchCopy.noScoresYet = false;
       } else {
-        // Priority 2: Live player leaderboard points calculation
-        if (t1Sum > t2Sum) {
-          const diff = Math.round(t1Sum - t2Sum);
-          matchCopy.team1.matchStatus = `${diff > 0 ? diff : 1}UP`;
-          matchCopy.team2.matchStatus = `${diff > 0 ? diff : 1}DN`;
-          matchCopy.noScoresYet = false;
-        } else if (t2Sum > t1Sum) {
-          const diff = Math.round(t2Sum - t1Sum);
-          matchCopy.team1.matchStatus = `${diff > 0 ? diff : 1}DN`;
-          matchCopy.team2.matchStatus = `${diff > 0 ? diff : 1}UP`;
-          matchCopy.noScoresYet = false;
-        } else if (t1Sum > 0 && t2Sum > 0 && t1Sum === t2Sum) {
-          // Both teams have posted scores and are level -> AS
-          matchCopy.team1.matchStatus = 'AS';
-          matchCopy.team2.matchStatus = 'AS';
-          matchCopy.noScoresYet = false;
-        } else {
-          // No scores posted in API yet (0-0) -> REMOVED / BLANK (no status badge)
-          matchCopy.team1.matchStatus = '';
-          matchCopy.team2.matchStatus = '';
-          matchCopy.noScoresYet = true;
-        }
+        // No live data yet -> blank
+        matchCopy.team1.matchStatus = '';
+        matchCopy.team2.matchStatus = '';
+        matchCopy.noScoresYet = true;
       }
 
       return matchCopy;
