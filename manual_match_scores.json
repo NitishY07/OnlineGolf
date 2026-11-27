@@ -153,10 +153,5 @@
     "t1Status": "2UP",
     "t2Status": "2DN",
     "cleared": false
-  },
-  "R2D1M1": {
-    "t1Status": "",
-    "t2Status": "",
-    "cleared": true
   }
 }
