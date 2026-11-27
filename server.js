@@ -85,58 +85,62 @@ function cleanStr(n) {
 }
 
 // ── Match Play Points Cache & Fetcher (ajax_get_league_leaderboardpoints) ──
-let leaderboardPointsCache = {
-  timestamp: 0,
-  round: null,
-  matches: []
-};
+// Cached PER TEAM so one slow/failed team request never wipes out other teams' data
+const leaderboardPointsByTeam = {}; // { "2_teamid": { timestamp: ms, matches: [...] } }
 const LEADERBOARD_POINTS_TTL_MS = 15000; // 15 seconds
 
 async function getLeaderboardMatchPoints(targetRound, activeTeamIds) {
   const now = Date.now();
-  if (
-    leaderboardPointsCache.round === targetRound &&
-    now - leaderboardPointsCache.timestamp < LEADERBOARD_POINTS_TTL_MS &&
-    leaderboardPointsCache.matches.length > 0
-  ) {
-    return leaderboardPointsCache.matches;
-  }
+  const list = Array.from(activeTeamIds);
+  if (list.length === 0) return [];
 
-  try {
-    const list = Array.from(activeTeamIds);
-    if (list.length === 0) return leaderboardPointsCache.matches;
+  // Find which teams need a refresh (missing or older than 15s)
+  const staleIds = list.filter(id => {
+    const entry = leaderboardPointsByTeam[`${targetRound}_${id}`];
+    return !entry || (now - entry.timestamp >= LEADERBOARD_POINTS_TTL_MS);
+  });
 
-    const results = await Promise.all(
-      list.map(id =>
-        postJson('/ajax_get_league_leaderboardpoints', {
-          league: LEAGUE_ID,
-          rtype: targetRound,
-          teamid: id
-        })
-      )
-    );
+  if (staleIds.length > 0) {
+    try {
+      // Fetch in small batches of 5 to avoid overwhelming the upstream server / hitting timeouts
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < staleIds.length; i += BATCH_SIZE) {
+        const batch = staleIds.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(id =>
+            postJson('/ajax_get_league_leaderboardpoints', {
+              league: LEAGUE_ID,
+              rtype: targetRound,
+              teamid: id
+            }).then(d => ({ id, d })).catch(() => ({ id, d: null }))
+          )
+        );
 
-    const rKey = `R${targetRound}_playernames`;
-    const collected = [];
-    results.forEach(d => {
-      const rp = d && d.data && d.data.scores && d.data.scores[0] && d.data.scores[0].roundpoints;
-      if (rp && Array.isArray(rp[rKey])) {
-        collected.push(...rp[rKey]);
+        const rKey = `R${targetRound}_playernames`;
+        results.forEach(({ id, d }) => {
+          const rp = d && d.data && d.data.scores && d.data.scores[0] && d.data.scores[0].roundpoints;
+          if (rp && Array.isArray(rp[rKey])) {
+            leaderboardPointsByTeam[`${targetRound}_${id}`] = {
+              timestamp: Date.now(),
+              matches: rp[rKey]
+            };
+          }
+        });
       }
-    });
-
-    if (collected.length > 0) {
-      leaderboardPointsCache = {
-        timestamp: now,
-        round: targetRound,
-        matches: collected
-      };
+    } catch (err) {
+      console.error('Error fetching ajax_get_league_leaderboardpoints:', err.message);
     }
-    return leaderboardPointsCache.matches;
-  } catch (err) {
-    console.error('Error fetching ajax_get_league_leaderboardpoints:', err.message);
-    return leaderboardPointsCache.matches;
   }
+
+  // Collect all cached matches for the requested teams
+  const collected = [];
+  list.forEach(id => {
+    const entry = leaderboardPointsByTeam[`${targetRound}_${id}`];
+    if (entry && Array.isArray(entry.matches)) {
+      collected.push(...entry.matches);
+    }
+  });
+  return collected;
 }
 
 function extractMatchPlayStatus(item, isTeam1Direct) {
@@ -193,7 +197,7 @@ async function postJson(endpoint, body){
         'Accept': 'application/json'
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(15000)
     });
 
     const text = await res.text();
@@ -394,24 +398,35 @@ app.get('/api/team-list', async (req,res)=>{
   }
 });
 
+// ── Metadata Cache (teams, groups, draw list) - cached 60s so /api/draw stays fast & resilient ──
+let drawMetaCache = {
+  timestamp: 0,
+  drawData: null,
+  teams: [],
+  groupData: null
+};
+const DRAW_META_TTL_MS = 60000;
+
 // 🔥 GET LEAGUE DRAW & SCHEDULE (FILTERED BY DATE)
 app.get('/api/draw', async (req, res) => {
   try {
-    const drawData = await postJson(
-      '/ajax_get_all_draw_list',
-      { league: LEAGUE_ID }
-    );
+    const nowMeta = Date.now();
+    if (nowMeta - drawMetaCache.timestamp >= DRAW_META_TTL_MS || drawMetaCache.teams.length === 0) {
+      const [newDrawData, newTeamsData, newGroupData] = await Promise.all([
+        postJson('/ajax_get_all_draw_list', { league: LEAGUE_ID }),
+        postJson('/ajax_get_league_overall_leaderboard', { league: LEAGUE_ID, roundtype: ROUND_TYPE }),
+        postJson('/ajax_get_league_group_leaderboard', { league: LEAGUE_ID, round: ROUND_TYPE, roundtype: ROUND_TYPE })
+      ]);
+      const extractedTeams = extractTeams(newTeamsData);
+      if (newDrawData && newDrawData.status === 1) drawMetaCache.drawData = newDrawData;
+      if (extractedTeams.length > 0) drawMetaCache.teams = extractedTeams;
+      if (newGroupData && newGroupData.status === 1) drawMetaCache.groupData = newGroupData;
+      if (drawMetaCache.teams.length > 0) drawMetaCache.timestamp = nowMeta;
+    }
 
-    const teamsData = await postJson(
-      '/ajax_get_league_overall_leaderboard',
-      { league: LEAGUE_ID, roundtype: ROUND_TYPE }
-    );
-    const teams = extractTeams(teamsData);
-
-    const groupData = await postJson(
-      '/ajax_get_league_group_leaderboard',
-      { league: LEAGUE_ID, round: ROUND_TYPE, roundtype: ROUND_TYPE }
-    );
+    const drawData = drawMetaCache.drawData;
+    const teams = drawMetaCache.teams;
+    const groupData = drawMetaCache.groupData;
 
     // Fetch official Draw List API for real-time match play status (team1won / team2won)
     const targetDate = req.query.date || selectedDrawDate || '2026-11-20';
@@ -420,26 +435,6 @@ app.get('/api/draw', async (req, res) => {
     if (Date.now() - playerCacheTime > CACHE_TTL_MS) {
       await refreshPlayerCache();
     }
-
-    // Collect unique team IDs from base matches for leaderboard points fetch
-    const activeTeamIds = new Set();
-    const allSchedules = [
-      ...(morningScheduleRound2Day1 || []),
-      ...(afternoonScheduleRound2Day1 || []),
-      ...(morningSchedule || []),
-      ...(afternoonSchedule || []),
-      ...(morningScheduleDay2 || []),
-      ...(afternoonScheduleDay2 || [])
-    ];
-    allSchedules.forEach(m => {
-      const t1 = teams.find(t => t.teamname && cleanStr(t.teamname) === cleanStr(m.team1.name));
-      const t2 = teams.find(t => t.teamname && cleanStr(t.teamname) === cleanStr(m.team2.name));
-      if (t1) activeTeamIds.add(t1.teamid);
-      if (t2) activeTeamIds.add(t2.teamid);
-    });
-
-    // Fetch live match play status from ajax_get_league_leaderboardpoints (cached 15s)
-    const liveMatchPlayData = await getLeaderboardMatchPoints(targetRound, activeTeamIds);
 
     const allSessions = (drawData && drawData.data && Array.isArray(drawData.data))
       ? drawData.data
@@ -499,6 +494,29 @@ app.get('/api/draw', async (req, res) => {
         baseMatches = allOfficialMatches;
       }
     }
+
+    // Collect ONLY 1 team ID per unique pairing in baseMatches (e.g. 5 teams per session, 10 for full day)
+    // Because ajax_get_league_leaderboardpoints for Team A already returns all matches against Team B!
+    const activeTeamIds = new Set();
+    const seenPairings = new Set();
+    baseMatches.forEach(m => {
+      const n1 = cleanStr(m.team1?.name);
+      const n2 = cleanStr(m.team2?.name);
+      const pairKey = [n1, n2].sort().join('_vs_');
+      if (seenPairings.has(pairKey)) return;
+      seenPairings.add(pairKey);
+
+      const t1 = teams.find(t => t.teamname && cleanStr(t.teamname) === n1);
+      const t2 = teams.find(t => t.teamname && cleanStr(t.teamname) === n2);
+      if (t1 && t1.teamid) {
+        activeTeamIds.add(t1.teamid);
+      } else if (t2 && t2.teamid) {
+        activeTeamIds.add(t2.teamid);
+      }
+    });
+
+    // Fetch live match play status from ajax_get_league_leaderboardpoints (per-team cached 15s, batched)
+    const liveMatchPlayData = await getLeaderboardMatchPoints(targetRound, activeTeamIds);
 
     // Enrich matches with team logos and live scores
     const enrichedMatches = baseMatches.map(m => {
