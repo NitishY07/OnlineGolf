@@ -482,13 +482,8 @@ app.get('/api/draw', async (req, res) => {
           matchCopy.team1.matchStatus = 'AS';
           matchCopy.team2.matchStatus = 'AS';
           matchCopy.noScoresYet = false;
-        } else if (t1Info?.liveStatus === 1 && t2Info?.liveStatus === 1) {
-          // Both teams are marked active/live in the official API (play in progress, level / all square) -> AS
-          matchCopy.team1.matchStatus = 'AS';
-          matchCopy.team2.matchStatus = 'AS';
-          matchCopy.noScoresYet = false;
         } else {
-          // Initial state: not started yet / not live in API -> REMOVED / BLANK
+          // No scores posted in API yet (0-0) -> REMOVED / BLANK (no status badge)
           matchCopy.team1.matchStatus = '';
           matchCopy.team2.matchStatus = '';
           matchCopy.noScoresYet = true;
